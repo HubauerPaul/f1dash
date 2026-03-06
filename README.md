@@ -9,7 +9,7 @@ Custom F1 live feed on dual 27" monitors powered by a Raspberry Pi 5.
 
 ```bash
 # Clone and install
-git clone <your-repo-url> ~/f1-live-dashboard
+git clone https://github.com/HubauerPaul/f1dash.git ~/f1-live-dashboard
 cd ~/f1-live-dashboard
 bash setup/install.sh
 
@@ -20,7 +20,7 @@ sudo systemctl start f1-kiosk
 
 ## Admin Panel
 
-Open `http://raspberrypi.local:8000/admin` from any device on your network.
+Open `http://<RASPBERRY_IP>.local:8000/admin` from any device on your network.
 
 ## Update
 
