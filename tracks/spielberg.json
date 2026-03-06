@@ -1,0 +1,11 @@
+{
+  "_comment": "Track layout placeholder — coordinates will be derived from OpenF1 position data or manually defined as normalized (0-1) bezier paths",
+  "name": "Red Bull Ring",
+  "short_name": "spielberg",
+  "country": "Austria",
+  "total_laps": 71,
+  "drs_zones": [
+    {"start": 0.65, "end": 0.78},
+    {"start": 0.85, "end": 0.95}
+  ]
+}

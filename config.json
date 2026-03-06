@@ -1,0 +1,32 @@
+{
+  "delay_seconds": 8.0,
+  "polling_intervals": {
+    "position": 3.5,
+    "race_control": 3.0,
+    "stints": 5.0,
+    "weather": 10.0,
+    "car_data": 3.5,
+    "laps": 5.0,
+    "intervals": 3.5,
+    "pit": 5.0,
+    "drivers": 60.0,
+    "sessions": 60.0
+  },
+  "display": {
+    "upper": ["trackmap", "leaderboard", "flag_bar"],
+    "lower": ["race_control", "tire_strategy", "weather", "track_limits"]
+  },
+  "crash_detection": {
+    "enabled": true,
+    "speed_threshold_high": 200,
+    "speed_threshold_low": 50,
+    "time_window_seconds": 4
+  },
+  "flag_popup": {
+    "auto_dismiss_seconds": 10,
+    "show_driver": true
+  },
+  "track_limits": {
+    "warning_threshold": 3
+  }
+}
