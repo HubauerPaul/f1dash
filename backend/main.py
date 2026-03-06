@@ -91,8 +91,11 @@ async def poll_loop():
         except Exception as e:
             logger.error(f"Poll loop error: {e}")
 
-        await asyncio.sleep(1.0)  # Main loop tick — individual endpoints
-                                   # have their own intervals
+        # Fast during live sessions, slow between sessions
+        if openf1.session.status == "active":
+            await asyncio.sleep(1.0)
+        else:
+            await asyncio.sleep(30.0)  # Check once per 30s between sessions
 
 
 async def broadcast(state: DashboardState):

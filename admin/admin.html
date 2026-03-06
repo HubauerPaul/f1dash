@@ -22,7 +22,7 @@
   .card-title { color: #666; font-size: 11px; letter-spacing: 0.08em; margin-bottom: 12px; }
 
   /* Status grid */
-  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .status-item { background: #1a1a1a; border-radius: 5px; padding: 10px 14px; }
   .status-label { color: #555; font-size: 10px; letter-spacing: 0.08em; }
   .status-value { font-size: 14px; font-weight: 700; margin-top: 6px; }
@@ -81,24 +81,32 @@
       <div class="status-value" id="apiStatus">—</div>
     </div>
     <div class="status-item">
-      <div class="status-label">SESSION</div>
-      <div class="status-value" id="sessionStatus">—</div>
+      <div class="status-label">CIRCUIT</div>
+      <div class="status-value" id="circuitName" style="color:#eee">—</div>
     </div>
     <div class="status-item">
-      <div class="status-label">DISPLAYS</div>
-      <div class="status-value" id="displayStatus">—</div>
+      <div class="status-label">SESSION</div>
+      <div class="status-value" id="sessionName" style="color:#eee">—</div>
     </div>
     <div class="status-item">
       <div class="status-label">DRIVERS</div>
       <div class="status-value" id="driverCount">—</div>
     </div>
     <div class="status-item">
+      <div class="status-label">DISPLAYS</div>
+      <div class="status-value" id="displayStatus">—</div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">FLAG</div>
+      <div class="status-value" id="flagStatus">—</div>
+    </div>
+    <div class="status-item">
       <div class="status-label">UPTIME</div>
       <div class="status-value" id="uptime">—</div>
     </div>
     <div class="status-item">
-      <div class="status-label">BUFFER</div>
-      <div class="status-value" id="bufferStatus">—</div>
+      <div class="status-label">LAP</div>
+      <div class="status-value" id="lapStatus" style="color:#eee">—</div>
     </div>
   </div>
 </div>
@@ -196,37 +204,76 @@ async function pollHealth() {
     const resp = await fetch("/api/health");
     const h = await resp.json();
 
+    // API status
     document.getElementById("apiStatus").textContent =
       h.api_connected ? "● CONNECTED" : "● DISCONNECTED";
     document.getElementById("apiStatus").className =
       "status-value " + (h.api_connected ? "ok" : "err");
 
-    document.getElementById("sessionStatus").textContent =
-      h.session_active ? "ACTIVE" : "INACTIVE";
-    document.getElementById("sessionStatus").className =
-      "status-value " + (h.session_active ? "ok" : "warn");
-
+    // Displays
     document.getElementById("displayStatus").textContent =
       `${h.displays_connected} connected`;
     document.getElementById("displayStatus").className =
       "status-value " + (h.displays_connected > 0 ? "ok" : "warn");
 
-    document.getElementById("driverCount").textContent = h.driver_count || "0";
-    document.getElementById("driverCount").className = "status-value";
+    // Drivers
+    document.getElementById("driverCount").textContent =
+      h.driver_count ? `${h.driver_count} loaded` : "0";
+    document.getElementById("driverCount").className =
+      "status-value " + (h.driver_count > 0 ? "ok" : "warn");
 
+    // Uptime
     const mins = Math.floor(h.uptime_seconds / 60);
     const hrs = Math.floor(mins / 60);
     document.getElementById("uptime").textContent =
       hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins}m`;
     document.getElementById("uptime").className = "status-value";
 
-    document.getElementById("bufferStatus").textContent = "OK";
-    document.getElementById("bufferStatus").className = "status-value ok";
-
   } catch (e) {
     document.getElementById("apiStatus").textContent = "● OFFLINE";
     document.getElementById("apiStatus").className = "status-value err";
   }
+
+  // Fetch full state for session details
+  try {
+    const resp2 = await fetch("/api/state");
+    const s = await resp2.json();
+
+    // Circuit
+    const circuit = s.session?.circuit || s.session?.circuit_short || "—";
+    const country = s.session?.country || "";
+    document.getElementById("circuitName").textContent = circuit;
+    document.getElementById("circuitName").title = country;
+
+    // Session name
+    document.getElementById("sessionName").textContent =
+      s.session?.name || "No Session";
+
+    // Flag
+    const flagMap = {
+      green: "🟢 GREEN", yellow: "🟡 YELLOW", double_yellow: "🟡 DBL YELLOW",
+      red: "🔴 RED FLAG", sc: "🟡 SAFETY CAR", vsc: "🟡 VSC",
+      chequered: "🏁 CHEQUERED", none: "⚫ NONE"
+    };
+    const flagColors = {
+      green: "ok", yellow: "warn", double_yellow: "warn",
+      red: "err", sc: "warn", vsc: "warn", none: ""
+    };
+    const flag = s.flag?.current || "none";
+    document.getElementById("flagStatus").textContent = flagMap[flag] || flag;
+    document.getElementById("flagStatus").className =
+      "status-value " + (flagColors[flag] || "");
+
+    // Lap
+    const lap = s.session?.lap;
+    const total = s.session?.total_laps;
+    if (lap && total) {
+      document.getElementById("lapStatus").textContent = `${lap} / ${total}`;
+    } else {
+      document.getElementById("lapStatus").textContent = s.session?.name || "—";
+    }
+
+  } catch (e) {}
 }
 
 // ── WebSocket for live state ───────────────────────────

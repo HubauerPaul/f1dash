@@ -10,10 +10,10 @@
 
   :root {
     --bg: #0a0a0a;
-    --panel: #111111;
-    --border: #1e1e1e;
+    --panel: #0e0e0e;
+    --border: #1a1a1a;
     --text: #dddddd;
-    --text-dim: #666666;
+    --text-dim: #555555;
     --f1-red: #ff1801;
     --flag-green: #00cc44;
     --flag-yellow: #ffcc00;
@@ -31,162 +31,155 @@
     cursor: none;
   }
 
-  /* ── Layout ────────────────────────────── */
   .container {
     display: grid;
-    grid-template-columns: 1fr 240px;
+    grid-template-columns: 1fr 260px;
     grid-template-rows: 8px auto 1fr auto;
     height: 100vh;
     background: var(--panel);
   }
 
-  /* ── Flag Bar ──────────────────────────── */
+  /* Flag Bar */
   .flag-bar {
     grid-column: 1 / -1;
     height: 8px;
     background: var(--flag-green);
     transition: background 0.5s, box-shadow 0.5s;
   }
-  .flag-bar.yellow { background: var(--flag-yellow); box-shadow: 0 2px 20px #ffcc0044; }
+  .flag-bar.yellow, .flag-bar.double_yellow { background: var(--flag-yellow); box-shadow: 0 2px 20px #ffcc0044; }
   .flag-bar.red { background: var(--flag-red); box-shadow: 0 2px 20px #ff222244; }
   .flag-bar.sc, .flag-bar.vsc { background: var(--flag-yellow); }
+  .flag-bar.none { background: #333; }
 
-  /* ── Info Bar ──────────────────────────── */
+  /* Info Bar */
   .info-bar {
     grid-column: 1 / -1;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 20px;
+    padding: 8px 24px;
     border-bottom: 1px solid var(--border);
-    font-size: 14px;
+    font-size: 20px;
   }
-  .info-left { display: flex; align-items: center; gap: 14px; }
-  .info-right { display: flex; align-items: center; gap: 18px; }
-  .f1-logo { color: var(--f1-red); font-weight: 900; font-size: 18px; }
-  .circuit-name { color: #888; font-weight: 600; }
-  .flag-indicator { font-weight: 700; font-size: 13px; }
-  .lap-counter { color: #888; font-weight: 600; font-size: 14px; }
+  .info-left { display: flex; align-items: center; gap: 16px; }
+  .info-right { display: flex; align-items: center; gap: 20px; }
+  .f1-logo { color: var(--f1-red); font-weight: 900; font-size: 22px; }
+  .circuit-name { color: #999; font-weight: 700; font-size: 20px; }
+  .session-name { color: #555; font-size: 14px; }
+  .flag-indicator { font-weight: 700; font-size: 14px; }
+  .lap-counter { color: #999; font-weight: 700; font-size: 20px; }
 
-  /* ── Track Map ─────────────────────────── */
+  /* Track Map */
   .track-area {
     grid-column: 1;
     position: relative;
     overflow: hidden;
   }
-  #trackCanvas {
-    width: 100%;
-    height: 100%;
-  }
+  #trackCanvas { width: 100%; height: 100%; }
 
-  /* ── Leaderboard Sidebar ───────────────── */
+  /* Leaderboard Sidebar */
   .sidebar {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 3 / 5;
     border-left: 1px solid var(--border);
     overflow-y: auto;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
   }
+  #leaderboard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .sidebar::-webkit-scrollbar { width: 0; }
   .sidebar-header {
-    padding: 8px 14px;
-    font-size: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.12em;
     color: var(--f1-red);
-    border-bottom: 1px solid #1a1a1a;
-    background: linear-gradient(90deg, rgba(255,24,1,0.04), transparent);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(255,24,1,0.05), transparent);
     position: sticky;
-    top: 0;
-    z-index: 1;
+    top: 0; z-index: 1;
+    background-color: var(--panel);
   }
   .driver-row {
     display: grid;
-    grid-template-columns: 32px 52px 22px 1fr;
+    grid-template-columns: 42px 1fr;
     align-items: center;
-    padding: 3px 12px;
-    font-size: 15px;
-    border-left: 4px solid transparent;
+    padding: 7px 14px;
+    font-size: 22px;
+    border-left: 5px solid transparent;
+    position: relative;
   }
-  .driver-row .pos { font-weight: 500; color: #666; }
+  .driver-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    border-radius: 0 3px 3px 0;
+  }
+  .driver-row .pos { font-weight: 500; color: #555; font-size: 20px; }
   .driver-row .pos.top3 { font-weight: 900; color: #fff; }
-  .driver-row .abbr { font-weight: 800; color: #ddd; }
+  .driver-row .pos.top10 { color: #aaa; }
+  .driver-row .abbr { font-weight: 800; color: #ddd; font-size: 20px; }
   .driver-row .tire {
-    width: 16px; height: 16px; border-radius: 50%;
-    display: inline-block;
+    width: 17px; height: 17px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
   }
-  .driver-row .gap {
-    text-align: right; font-size: 13px; color: #777;
-  }
+  .driver-row .gap { text-align: right; font-size: 14px; color: #666; }
   .driver-row .gap.leader { color: var(--flag-green); font-weight: 800; }
   .driver-row .gap.dnf { color: #ff4444; }
 
-  /* ── Bottom Bar ────────────────────────── */
+  /* Bottom Bar */
   .bottom-bar {
     grid-column: 1 / -1;
     display: flex;
-    gap: 24px;
-    padding: 6px 20px;
+    gap: 28px;
+    padding: 8px 24px;
     border-top: 1px solid var(--border);
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text-dim);
   }
-  .bottom-bar .value { color: #ccc; }
+  .bottom-bar .value { color: #bbb; }
   .bottom-bar .fastest { color: var(--purple); }
   .bottom-bar .delay { color: #ffaa22; }
 
-  /* ── Flag Popup ────────────────────────── */
+  /* Flag Popup */
   .flag-popup-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.82); backdrop-filter: blur(6px);
+    align-items: center; justify-content: center;
   }
   .flag-popup-overlay.visible { display: flex; }
   .flag-popup {
-    background: #111;
-    border-radius: 10px;
-    padding: 36px 56px;
-    text-align: center;
-    max-width: 70%;
+    background: #111; border-radius: 10px;
+    padding: 40px 64px; text-align: center; max-width: 70%;
   }
-  .flag-popup .flag-band {
-    width: 140px; height: 14px; border-radius: 7px;
-    margin: 0 auto 20px;
-  }
-  .flag-popup .flag-title {
-    font-size: 40px; font-weight: 900;
-    letter-spacing: 0.08em; margin-bottom: 10px;
-  }
-  .flag-popup .flag-message {
-    font-size: 22px; color: #ccc; font-weight: 600; margin-bottom: 12px;
-  }
-  .flag-popup .flag-sector {
-    font-size: 18px; color: #999; margin-bottom: 8px;
-  }
+  .flag-popup .flag-band { width: 140px; height: 14px; border-radius: 7px; margin: 0 auto 22px; }
+  .flag-popup .flag-title { font-size: 44px; font-weight: 900; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .flag-popup .flag-message { font-size: 24px; color: #ccc; font-weight: 600; margin-bottom: 14px; }
+  .flag-popup .flag-sector { font-size: 20px; color: #999; margin-bottom: 10px; }
   .flag-popup .flag-driver {
-    font-size: 20px; color: #fff; font-weight: 700;
-    padding: 10px 24px; background: rgba(255,255,255,0.05);
-    border-radius: 5px; display: inline-block; margin-top: 6px;
+    font-size: 22px; color: #fff; font-weight: 700;
+    padding: 12px 28px; background: rgba(255,255,255,0.05);
+    border-radius: 5px; display: inline-block; margin-top: 8px;
   }
 
-  /* ── Standby Screen ────────────────────── */
+  /* Standby */
   .standby {
-    display: none;
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--bg);
-    align-items: center; justify-content: center;
-    flex-direction: column; gap: 12px;
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: var(--bg); align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px;
   }
   .standby.visible { display: flex; }
-  .standby h1 { font-size: 28px; font-weight: 300; }
+  .standby h1 { font-size: 32px; font-weight: 300; }
   .standby h1 span { font-weight: 900; color: var(--f1-red); }
   .standby p { color: #444; font-size: 14px; }
 
-  /* Tire colors */
   .tire-S { background: #FF3333; }
   .tire-M { background: #FFD700; }
   .tire-H { background: #FFFFFF; border: 1.5px solid #777; }
@@ -198,27 +191,24 @@
 
 <div class="container">
   <div class="flag-bar" id="flagBar"></div>
-
   <div class="info-bar">
     <div class="info-left">
       <span class="f1-logo">F1</span>
       <span class="circuit-name" id="circuitName">—</span>
+      <span class="session-name" id="sessionName"></span>
     </div>
     <div class="info-right">
       <span class="flag-indicator" id="flagIndicator">● —</span>
-      <span class="lap-counter" id="lapCounter">LAP — / —</span>
+      <span class="lap-counter" id="lapCounter"></span>
     </div>
   </div>
-
   <div class="track-area">
     <canvas id="trackCanvas"></canvas>
   </div>
-
   <div class="sidebar">
     <div class="sidebar-header">POSITIONS</div>
     <div id="leaderboard"></div>
   </div>
-
   <div class="bottom-bar">
     <span>FASTEST: <span class="fastest" id="fastestLap">—</span></span>
     <span>SPEED TRAP: <span class="value" id="speedTrap">—</span></span>
@@ -226,7 +216,6 @@
   </div>
 </div>
 
-<!-- Flag Popup -->
 <div class="flag-popup-overlay" id="flagPopup">
   <div class="flag-popup">
     <div class="flag-band" id="popupBand"></div>
@@ -237,10 +226,10 @@
   </div>
 </div>
 
-<!-- Standby -->
 <div class="standby" id="standby">
   <h1>F1 <span>LIVE</span> DASHBOARD</h1>
-  <p>Waiting for session data...</p>
+  <p id="standbyInfo">Waiting for session data...</p>
+  <p style="color:#333;font-size:12px;margin-top:20px">System running — will activate automatically when session starts</p>
 </div>
 
 <script>
@@ -272,200 +261,172 @@ class F1Socket {
   }
 }
 
+// ── Constants ──────────────────────────────────────────
+const FLAG_COLORS = {
+  green: "#00cc44", yellow: "#ffcc00", double_yellow: "#ffcc00",
+  red: "#ff2222", sc: "#ffcc00", vsc: "#ffcc00", chequered: "#ffffff", none: "#333"
+};
+const FLAG_LABELS = {
+  green: "GREEN", yellow: "YELLOW", double_yellow: "DBL YELLOW",
+  red: "RED FLAG", sc: "SAFETY CAR", vsc: "VSC", chequered: "CHEQUERED", none: "—"
+};
+
 // ── State ──────────────────────────────────────────────
 let state = null;
 let popupTimeout = null;
+let trackData = null;
 
-const FLAG_COLORS = {
-  green: "#00cc44", yellow: "#ffcc00", double_yellow: "#ffcc00",
-  red: "#ff2222", sc: "#ffcc00", vsc: "#ffcc00", chequered: "#ffffff",
-  none: "#333333"
+// ── Track Loading ──────────────────────────────────────
+const TRACK_FILE_MAP = {
+  "Melbourne": "melbourne", "Sakhir": "sakhir", "Shanghai": "shanghai",
+  "Suzuka": "suzuka", "Spielberg": "spielberg", "Silverstone": "silverstone",
+  "Spa-Francorchamps": "spa", "Monza": "monza", "Monte Carlo": "monaco",
+  "Catalunya": "catalunya", "Hungaroring": "hungaroring", "Zandvoort": "zandvoort",
+  "Baku": "baku", "Singapore": "singapore", "Austin": "austin",
+  "Mexico City": "mexico", "Interlagos": "interlagos", "Las Vegas": "lasvegas",
+  "Lusail": "lusail", "Yas Marina Circuit": "yas_marina", "Jeddah": "jeddah",
+  "Miami": "miami", "Montreal": "montreal", "Madring": "madrid",
 };
 
-const FLAG_LABELS = {
-  green: "GREEN", yellow: "YELLOW", double_yellow: "DOUBLE YELLOW",
-  red: "RED FLAG", sc: "SAFETY CAR", vsc: "VSC", chequered: "CHEQUERED",
-  none: "—"
-};
-
-// ── Flag Popup ─────────────────────────────────────────
-function showFlagPopup(flag) {
-  if (!flag || !flag.changed) return;
-  if (flag.current === "green" || flag.current === "none") {
-    // Brief green flash
-    const overlay = document.getElementById("flagPopup");
-    const band = document.getElementById("popupBand");
-    const title = document.getElementById("popupTitle");
-    const msg = document.getElementById("popupMessage");
-    const sector = document.getElementById("popupSector");
-    const driver = document.getElementById("popupDriver");
-
-    const color = FLAG_COLORS[flag.current] || "#333";
-    band.style.background = color;
-    band.style.boxShadow = `0 0 20px ${color}88`;
-    title.textContent = FLAG_LABELS[flag.current] || flag.current.toUpperCase();
-    title.style.color = color;
-    overlay.querySelector(".flag-popup").style.borderColor = color;
-    overlay.querySelector(".flag-popup").style.border = `4px solid ${color}`;
-    msg.textContent = "TRACK CLEAR";
-    sector.textContent = "";
-    driver.textContent = "";
-    driver.style.display = "none";
-
-    overlay.classList.add("visible");
-    clearTimeout(popupTimeout);
-    popupTimeout = setTimeout(() => overlay.classList.remove("visible"), 4000);
-    return;
-  }
-
-  const overlay = document.getElementById("flagPopup");
-  const band = document.getElementById("popupBand");
-  const title = document.getElementById("popupTitle");
-  const msg = document.getElementById("popupMessage");
-  const sector = document.getElementById("popupSector");
-  const driver = document.getElementById("popupDriver");
-
-  const color = FLAG_COLORS[flag.current] || "#ffcc00";
-  band.style.background = color;
-  band.style.boxShadow = `0 0 24px ${color}88`;
-  title.textContent = FLAG_LABELS[flag.current] || flag.current.toUpperCase();
-  title.style.color = color;
-  overlay.querySelector(".flag-popup").style.border = `4px solid ${color}`;
-  msg.textContent = flag.message || "";
-  sector.textContent = flag.sector ? `SECTOR ${flag.sector}` : "";
-  if (flag.driver) {
-    driver.textContent = flag.driver;
-    driver.style.display = "inline-block";
-  } else {
-    driver.style.display = "none";
-  }
-
-  overlay.classList.add("visible");
-  clearTimeout(popupTimeout);
-  popupTimeout = setTimeout(() => overlay.classList.remove("visible"), 10000);
+async function loadTrack(circuitShort) {
+  const fileName = TRACK_FILE_MAP[circuitShort] || circuitShort.toLowerCase().replace(/\s+/g, '_');
+  try {
+    const resp = await fetch(`/tracks/${fileName}.json`);
+    if (resp.ok) {
+      trackData = await resp.json();
+      console.log(`Track loaded: ${trackData.name} (${trackData.points.length} pts)`);
+      return;
+    }
+  } catch (e) {}
+  console.warn(`No track file for "${circuitShort}", using driver positions as fallback`);
+  trackData = null;
 }
 
-// Dismiss popup on click
-document.getElementById("flagPopup").addEventListener("click", () => {
-  document.getElementById("flagPopup").classList.remove("visible");
-  clearTimeout(popupTimeout);
-});
-
-// ── Leaderboard ────────────────────────────────────────
-function renderLeaderboard(drivers) {
-  const el = document.getElementById("leaderboard");
-  let html = "";
-  for (const d of drivers) {
-    const isTop3 = d.pos <= 3;
-    const gapClass = d.gap === "LEADER" ? "leader" : (d.status === "dnf" || d.gap === "DNF") ? "dnf" : "";
-    const gapText = d.gap === "LEADER" ? "LDR" : d.gap || "";
-
-    html += `<div class="driver-row" style="border-left-color:${d.team_color}">
-      <span class="pos ${isTop3 ? 'top3' : ''}">${d.pos}</span>
-      <span class="abbr">${d.abbr}</span>
-      <span class="tire tire-${d.tire}"></span>
-      <span class="gap ${gapClass}">${gapText}</span>
-    </div>`;
-  }
-  el.innerHTML = html;
-}
-
-// ── Track Map (Canvas) ─────────────────────────────────
+// ── Canvas ─────────────────────────────────────────────
 const canvas = document.getElementById("trackCanvas");
 const ctx = canvas.getContext("2d");
-
-// Default track shape (oval approximation — will be replaced with real track data)
-function getDefaultTrackPoints(w, h) {
-  const cx = w * 0.45, cy = h * 0.5;
-  const rx = w * 0.32, ry = h * 0.38;
-  const pts = [];
-  for (let i = 0; i < 100; i++) {
-    const a = (i / 100) * Math.PI * 2;
-    // Distort oval for more interesting shape
-    const mod = 1 + 0.15 * Math.sin(a * 3) + 0.08 * Math.cos(a * 5);
-    pts.push([
-      cx + rx * Math.cos(a) * mod,
-      cy + ry * Math.sin(a) * mod,
-    ]);
-  }
-  return pts;
-}
-
-let trackPoints = [];
 
 function resizeCanvas() {
   const area = canvas.parentElement;
   canvas.width = area.clientWidth;
   canvas.height = area.clientHeight;
-  trackPoints = getDefaultTrackPoints(canvas.width, canvas.height);
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-function getTrackPosition(pct) {
-  if (!trackPoints.length) return [0, 0];
-  const idx = ((pct % 1) + 1) % 1 * (trackPoints.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.min(lo + 1, trackPoints.length - 1);
-  const t = idx - lo;
-  return [
-    trackPoints[lo][0] + (trackPoints[hi][0] - trackPoints[lo][0]) * t,
-    trackPoints[lo][1] + (trackPoints[hi][1] - trackPoints[lo][1]) * t,
-  ];
+// ── Coordinate Mapping ─────────────────────────────────
+function getTrackTransform(w, h) {
+  // Maps raw API x,y to canvas x,y
+  // Auto-rotates so the longest dimension goes horizontally
+  let minX, maxX, minY, maxY;
+
+  if (trackData && trackData.raw_bounds) {
+    const b = trackData.raw_bounds;
+    minX = b.min_x; maxX = b.max_x;
+    minY = b.min_y; maxY = b.max_y;
+  } else {
+    const active = (state?.drivers || []).filter(d => d.x !== 0 || d.y !== 0);
+    if (active.length < 2) return null;
+    const xs = active.map(d => d.x);
+    const ys = active.map(d => d.y);
+    minX = Math.min(...xs); maxX = Math.max(...xs);
+    minY = Math.min(...ys); maxY = Math.max(...ys);
+  }
+
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+
+  // Determine if track is taller than wide — if so, rotate 90°
+  const shouldRotate = rangeY > rangeX * 1.15;
+
+  const padding = 50;
+  const drawW = w - padding * 2;
+  const drawH = h - padding * 2;
+
+  const midX = (minX + maxX) / 2;
+  const midY = (minY + maxY) / 2;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  if (shouldRotate) {
+    // Rotate 90° — swap X and Y, fit rotated dimensions
+    const scale = Math.min(drawW / rangeY, drawH / rangeX);
+    return (rawX, rawY) => [
+      cx + (rawY - midY) * scale,
+      cy + (rawX - midX) * scale
+    ];
+  } else {
+    const scale = Math.min(drawW / rangeX, drawH / rangeY);
+    return (rawX, rawY) => [
+      cx + (rawX - midX) * scale,
+      cy - (rawY - midY) * scale
+    ];
+  }
 }
 
-function renderTrackMap(drivers) {
+// ── Rendering ──────────────────────────────────────────
+function render() {
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  if (!trackPoints.length) return;
+  const transform = getTrackTransform(w, h);
+  if (!transform) return;
 
-  // Draw track surface
-  ctx.beginPath();
-  ctx.moveTo(trackPoints[0][0], trackPoints[0][1]);
-  for (let i = 1; i < trackPoints.length; i++) {
-    ctx.lineTo(trackPoints[i][0], trackPoints[i][1]);
+  // 1) Draw track outline from JSON points
+  if (trackData && trackData.points && trackData.points.length > 3) {
+    const b = trackData.raw_bounds;
+    const rng = Math.max(b.max_x - b.min_x, b.max_y - b.min_y) || 1;
+
+    const canvasPts = trackData.points.map(([nx, ny]) => {
+      const rawX = nx * rng + b.min_x;
+      const rawY = ny * rng + b.min_y;
+      return transform(rawX, rawY);
+    });
+
+    // Track surface
+    ctx.beginPath();
+    ctx.moveTo(canvasPts[0][0], canvasPts[0][1]);
+    for (let i = 1; i < canvasPts.length; i++) {
+      ctx.lineTo(canvasPts[i][0], canvasPts[i][1]);
+    }
+    
+
+    // Outer edge
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 36;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // Road surface
+    ctx.strokeStyle = "#252525";
+    ctx.lineWidth = 28;
+    ctx.stroke();
+
+    // Subtle dashed center
+    ctx.setLineDash([2, 16]);
+    ctx.strokeStyle = "#2a2a2a";
+    ctx.lineWidth = 30;
+    ctx.globalAlpha = 0.15;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
   }
-  ctx.closePath();
-  ctx.strokeStyle = "#333";
-  ctx.lineWidth = 48;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.stroke();
 
-  ctx.strokeStyle = "#444";
-  ctx.lineWidth = 40;
-  ctx.stroke();
+  // 2) Draw drivers at real x,y positions
+  const drivers = (state?.drivers || []).filter(d =>
+    (d.x !== 0 || d.y !== 0) && d.status !== "dnf"
+  );
 
-  // Draw dashed center line
-  ctx.setLineDash([2, 12]);
-  ctx.strokeStyle = "#555";
-  ctx.lineWidth = 42;
-  ctx.globalAlpha = 0.15;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.globalAlpha = 1;
-
-  // Draw sector labels
-  ctx.font = "bold 14px 'JetBrains Mono', monospace";
-  ctx.fillStyle = "#444";
-  const s1 = getTrackPosition(0.15);
-  const s2 = getTrackPosition(0.48);
-  const s3 = getTrackPosition(0.78);
-  ctx.fillText("S1", s1[0] + 30, s1[1] - 30);
-  ctx.fillText("S2", s2[0] + 30, s2[1] + 30);
-  ctx.fillText("S3", s3[0] - 50, s3[1] - 30);
-
-  // Draw drivers
-  const active = (drivers || []).filter(d => d.track_pct >= 0 && d.status !== "dnf");
-  for (const d of active) {
-    const [x, y] = getTrackPosition(d.track_pct);
+  for (const d of drivers) {
+    const [cx, cy] = transform(d.x, d.y);
+    if (cx < -30 || cx > w + 30 || cy < -30 || cy > h + 30) continue;
 
     // Dot
     ctx.beginPath();
-    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 18, 0, Math.PI * 2);
     ctx.fillStyle = d.team_color || "#555";
-    ctx.globalAlpha = 0.93;
+    ctx.globalAlpha = 0.94;
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = "#000";
@@ -479,64 +440,115 @@ function renderTrackMap(drivers) {
     ctx.textBaseline = "middle";
     ctx.shadowColor = "rgba(0,0,0,0.9)";
     ctx.shadowBlur = 3;
-    ctx.fillText(d.abbr, x, y + 1);
+    ctx.fillText(d.abbr, cx, cy + 1);
     ctx.shadowBlur = 0;
   }
 }
 
+// ── Flag Popup ─────────────────────────────────────────
+function showFlagPopup(flag) {
+  if (!flag || !flag.changed) return;
+  const overlay = document.getElementById("flagPopup");
+  const color = FLAG_COLORS[flag.current] || "#333";
+  const isGreen = flag.current === "green";
+
+  document.getElementById("popupBand").style.cssText = `background:${color};box-shadow:0 0 24px ${color}88`;
+  document.getElementById("popupTitle").textContent = FLAG_LABELS[flag.current] || flag.current.toUpperCase();
+  document.getElementById("popupTitle").style.color = color;
+  overlay.querySelector(".flag-popup").style.border = `4px solid ${color}`;
+  document.getElementById("popupMessage").textContent = isGreen ? "TRACK CLEAR" : (flag.message || "");
+  document.getElementById("popupSector").textContent = flag.sector ? `SECTOR ${flag.sector}` : "";
+
+  const driverEl = document.getElementById("popupDriver");
+  if (flag.driver && !isGreen) {
+    driverEl.textContent = flag.driver;
+    driverEl.style.display = "inline-block";
+  } else {
+    driverEl.style.display = "none";
+  }
+
+  overlay.classList.add("visible");
+  clearTimeout(popupTimeout);
+  popupTimeout = setTimeout(() => overlay.classList.remove("visible"), isGreen ? 4000 : 10000);
+}
+
+document.getElementById("flagPopup").addEventListener("click", () => {
+  document.getElementById("flagPopup").classList.remove("visible");
+  clearTimeout(popupTimeout);
+});
+
+// ── Leaderboard ────────────────────────────────────────
+function renderLeaderboard(drivers) {
+  const el = document.getElementById("leaderboard");
+  let html = "";
+  for (const d of drivers) {
+    const posClass = d.pos <= 3 ? "top3" : d.pos <= 10 ? "top10" : "";
+    html += `<div class="driver-row" style="border-left-color:${d.team_color};--tc:${d.team_color}">
+      <span class="pos ${posClass}">${d.pos || "—"}</span>
+      <span class="abbr">${d.abbr}</span>
+      <style>.driver-row[style*="${d.team_color}"]::before{background:${d.team_color}}</style>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
 // ── Main Update ────────────────────────────────────────
-function updateUI(data) {
+let lastCircuit = "";
+
+async function updateUI(data) {
   state = data;
 
-  // Hide standby
+  // Show standby if no drivers or session inactive
+  const hasDrivers = data.drivers && data.drivers.length > 0;
+  const hasActiveDrivers = hasDrivers && data.drivers.some(d => d.x !== 0 || d.y !== 0);
+  const sessionActive = data.session && data.session.status === "active";
+
+  if (!hasDrivers) {
+    document.getElementById("standby").classList.add("visible");
+    document.getElementById("standbyInfo").textContent = "No session data available";
+    return;
+  }
   document.getElementById("standby").classList.remove("visible");
 
+  // Load track on circuit change
+  const circuit = data.session?.circuit || "";
+  if (circuit && circuit !== lastCircuit) {
+    lastCircuit = circuit;
+    await loadTrack(circuit);
+  }
+
   // Flag bar
-  const flagBar = document.getElementById("flagBar");
-  flagBar.className = "flag-bar " + (data.flag?.current || "green");
+  document.getElementById("flagBar").className = "flag-bar " + (data.flag?.current || "none");
 
   // Flag indicator
   const fi = document.getElementById("flagIndicator");
-  const flagColor = FLAG_COLORS[data.flag?.current] || "#333";
-  fi.style.color = flagColor;
+  fi.style.color = FLAG_COLORS[data.flag?.current] || "#333";
   fi.textContent = `● ${FLAG_LABELS[data.flag?.current] || "—"}`;
 
   // Session info
-  document.getElementById("circuitName").textContent =
-    data.session?.circuit || data.session?.country || "—";
+  document.getElementById("circuitName").textContent = circuit || "—";
+  document.getElementById("sessionName").textContent = data.session?.name || "";
+  const lap = data.session?.lap;
+  const total = data.session?.total_laps;
   document.getElementById("lapCounter").textContent =
-    `LAP ${data.session?.lap || "—"} / ${data.session?.total_laps || "—"}`;
+    (lap && total) ? `LAP ${lap} / ${total}` : (data.session?.name || "");
 
   // Bottom bar
   document.getElementById("fastestLap").textContent =
     data.fastest_lap?.driver ? `${data.fastest_lap.driver} ${data.fastest_lap.time}` : "—";
   document.getElementById("speedTrap").textContent =
     data.speed_trap?.driver ? `${data.speed_trap.driver} ${Math.round(data.speed_trap.speed)}` : "—";
-  document.getElementById("delayValue").textContent =
-    `${(data.delay_seconds || 0).toFixed(1)}s`;
+  document.getElementById("delayValue").textContent = `${(data.delay_seconds || 0).toFixed(1)}s`;
 
-  // Leaderboard
+  // Render everything
   renderLeaderboard(data.drivers || []);
-
-  // Track map
-  renderTrackMap(data.drivers || []);
-
-  // Flag popup
+  render();
   showFlagPopup(data.flag);
 }
 
-// ── Standby ────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────
 document.getElementById("standby").classList.add("visible");
-
-// ── Connect ────────────────────────────────────────────
 new F1Socket("upper", updateUI);
-
-// ── Animation Loop ─────────────────────────────────────
-function animate() {
-  if (state) renderTrackMap(state.drivers || []);
-  requestAnimationFrame(animate);
-}
-animate();
 </script>
 </body>
 </html>

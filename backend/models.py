@@ -77,6 +77,8 @@ class DriverState(BaseModel):
     pit_stops: int = 0
     speed: float = 0.0
     track_pct: float = -1.0  # -1 = not on track (DNF/pit)
+    x: float = 0.0  # Raw x coordinate from OpenF1 /location
+    y: float = 0.0  # Raw y coordinate from OpenF1 /location
     track_limits: int = 0
     drs: bool = False
     status: str = "running"  # running, pit, dnf, dns

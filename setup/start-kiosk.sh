@@ -1,12 +1,4 @@
 #!/bin/bash
-# F1 Live Dashboard — Kiosk Startup
-# Launches two Chromium instances, one per monitor.
-#
-# HDMI-1 (upper, 0,0): Track Map + Positions
-# HDMI-2 (lower, 0,1080): Race Control + Tires + Weather
-#
-# Adjust --window-position if your monitor layout differs.
-
 BACKEND_URL="http://localhost:8000"
 CHROMIUM_FLAGS=(
     --kiosk
@@ -23,7 +15,6 @@ CHROMIUM_FLAGS=(
     --autoplay-policy=no-user-gesture-required
 )
 
-# Wait for backend to be ready
 echo "Waiting for backend..."
 for i in $(seq 1 30); do
     if curl -s "$BACKEND_URL/api/health" > /dev/null 2>&1; then
@@ -33,7 +24,6 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-# Kill any existing Chromium instances
 killall chromium 2>/dev/null
 sleep 1
 
@@ -42,7 +32,7 @@ chromium "${CHROMIUM_FLAGS[@]}" \
     --window-position=0,0 \
     --window-size=1920,1080 \
     --user-data-dir=/tmp/chromium-upper \
-    "$BACKEND_URL/upper" &
+    "$BACKEND_URL/upper" 2>/dev/null &
 
 sleep 2
 
@@ -51,7 +41,7 @@ chromium "${CHROMIUM_FLAGS[@]}" \
     --window-position=0,1080 \
     --window-size=1920,1080 \
     --user-data-dir=/tmp/chromium-lower \
-    "$BACKEND_URL/lower" &
+    "$BACKEND_URL/lower" 2>/dev/null &
 
 echo "Kiosk started."
 wait

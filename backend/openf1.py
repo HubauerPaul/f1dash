@@ -94,31 +94,68 @@ class OpenF1Client:
     # ── Session Discovery ──────────────────────────────────
 
     async def find_active_session(self) -> bool:
-        """Find the current or most recent session."""
+        """Find the current or most recent session.
+        
+        Checks date_start and date_end to determine if a session is 
+        actually live right now, or if we're between sessions.
+        """
         if not self._should_poll("sessions"):
             return self.session.session_key is not None
 
-        # Try to find a live session first
         data = await self._get("/sessions", {"year": 2026})
         if not data:
-            # Fallback: try 2025 for testing
             data = await self._get("/sessions", {"year": 2025})
         if not data:
             return False
 
-        # Pick the latest session
-        latest = data[-1]
+        from datetime import datetime as dt_cls, timedelta
+        now = dt_cls.now(timezone.utc)
+
+        # Find a session that is currently live (started but not ended)
+        # Add 30 min buffer after date_end for post-session data
+        live_session = None
+        most_recent = None
+        for s in data:
+            try:
+                start = dt_cls.fromisoformat(s["date_start"].replace("Z", "+00:00"))
+                end_str = s.get("date_end", "")
+                end = dt_cls.fromisoformat(end_str.replace("Z", "+00:00")) if end_str else start + timedelta(hours=3)
+                
+                if start <= now:
+                    most_recent = s
+                    # Session is live if we're between start and end+30min
+                    if now <= end + timedelta(minutes=30):
+                        live_session = s
+            except (KeyError, ValueError):
+                continue
+
+        if live_session:
+            latest = live_session
+            status = "active"
+            # Fast polling during live session
+            self.intervals["sessions"] = 60.0
+            logger.info(f"LIVE session: {latest.get('session_name')} at {latest.get('circuit_short_name')}")
+        elif most_recent:
+            latest = most_recent
+            status = "finished"
+            # Slow polling between sessions — once per minute
+            self.intervals["sessions"] = 60.0
+            logger.info(f"No live session. Last was: {latest.get('session_name')} at {latest.get('circuit_short_name')}")
+        else:
+            self.session = SessionInfo(status="inactive")
+            self.intervals["sessions"] = 60.0
+            return False
+
         self.session = SessionInfo(
-            session_key=latest.get("session_key"),
+            session_key=latest.get("session_key") if status == "active" else None,
             name=latest.get("session_name", "Unknown"),
             circuit=latest.get("circuit_short_name", ""),
             circuit_short=latest.get("circuit_short_name", ""),
             country=latest.get("country_name", ""),
             year=latest.get("year", 2026),
-            status="active",
+            status=status,
         )
-        logger.info(f"Session found: {self.session.name} at {self.session.circuit}")
-        return True
+        return status == "active"
 
     # ── Data Polling ───────────────────────────────────────
 
@@ -150,32 +187,48 @@ class OpenF1Client:
             drv.team_color = team_info.get("color", "#555555")
 
     async def poll_positions(self) -> None:
-        """Fetch latest position/location data."""
+        """Fetch race positions and location (x,y) data."""
         if not self.session.session_key or not self._should_poll("position"):
             return
 
-        data = await self._get("/position", {
+        # 1) Race positions (1st, 2nd, etc.)
+        pos_data = await self._get("/position", {
             "session_key": self.session.session_key,
         })
-        if not data:
-            return
+        if pos_data:
+            latest_pos: dict[int, dict] = {}
+            for entry in pos_data:
+                num = entry.get("driver_number", 0)
+                if num:
+                    latest_pos[num] = entry
+            for num, entry in latest_pos.items():
+                if num in self.drivers:
+                    pos = entry.get("position", 0)
+                    if pos:
+                        self.drivers[num].pos = pos
 
-        # Group by driver, take latest entry per driver
-        latest: dict[int, dict] = {}
-        for entry in data:
-            num = entry.get("driver_number", 0)
-            if num:
-                latest[num] = entry
-
-        for num, entry in latest.items():
-            if num in self.drivers:
-                drv = self.drivers[num]
-                # Position on track (0-1 normalized)
-                x = entry.get("x")
-                y = entry.get("y")
-                # OpenF1 gives x,y coordinates; we'll use them directly
-                # and map to track in the frontend
-                drv.track_pct = max(0.0, min(1.0, (entry.get("date", "0")[-6:-4] or "0").__hash__() % 100 / 100.0))
+        # 2) Location (x, y coordinates on track)
+        loc_data = await self._get("/location", {
+            "session_key": self.session.session_key,
+        })
+        if loc_data:
+            latest_loc: dict[int, dict] = {}
+            for entry in loc_data:
+                num = entry.get("driver_number", 0)
+                if num:
+                    latest_loc[num] = entry
+            for num, entry in latest_loc.items():
+                if num in self.drivers:
+                    drv = self.drivers[num]
+                    x = entry.get("x", 0) or 0
+                    y = entry.get("y", 0) or 0
+                    drv.x = float(x)
+                    drv.y = float(y)
+                    # Mark as on-track if coordinates are non-zero
+                    if x != 0 or y != 0:
+                        drv.track_pct = 0.5  # Placeholder, frontend uses x,y
+                    else:
+                        drv.track_pct = -1.0
 
     async def poll_intervals(self) -> None:
         """Fetch gap/interval data."""
@@ -510,10 +563,13 @@ class OpenF1Client:
         """Run one poll cycle across all endpoints.
 
         Returns the assembled state, or None if no session is active.
+        Returns a minimal state with session info when between sessions.
         """
         has_session = await self.find_active_session()
+        
+        # Between sessions — return minimal state for standby display
         if not has_session:
-            return None
+            return self.build_state()
 
         # Poll all endpoints (each respects its own interval)
         await asyncio.gather(
