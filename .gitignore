@@ -1,0 +1,14 @@
+# Logs
+*.log
+/tmp/
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Node (falls vorhanden)
+node_modules/
+
+# System
+.DS_Store
