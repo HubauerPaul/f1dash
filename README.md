@@ -1,6 +1,6 @@
 # F1 Live Dashboard
 
-Custom F1 live feed on dual 27" monitors powered by a Raspberry Pi 4.
+Custom F1 live feed on dual 27" monitors powered by a Raspberry Pi 5.
 
 **Upper Monitor:** Track map with driver positions, leaderboard, live flag indicator  
 **Lower Monitor:** Race Control, Tire Strategy, Weather, Track Limits
