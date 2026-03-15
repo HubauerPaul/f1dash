@@ -75,6 +75,7 @@ class DriverState(BaseModel):
     tire: str = "?"
     stints: list[StintInfo] = Field(default_factory=list)
     pit_stops: int = 0
+    tire_laps: int = 0
     speed: float = 0.0
     track_pct: float = -1.0  # -1 = not on track (DNF/pit)
     x: float = 0.0  # Raw x coordinate from OpenF1 /location
@@ -82,6 +83,8 @@ class DriverState(BaseModel):
     track_limits: int = 0
     drs: bool = False
     status: str = "running"  # running, pit, dnf, dns
+    date_start: str = ""
+    date_end: str = ""
 
 
 class FlagState(BaseModel):
@@ -98,6 +101,7 @@ class RaceControlMessage(BaseModel):
     flag: Optional[FlagStatus] = None
     message: str = ""
     driver: Optional[str] = None
+    driver_number: Optional[str] = None
     sector: Optional[int] = None
 
 
@@ -121,6 +125,8 @@ class SessionInfo(BaseModel):
     lap: int = 0
     total_laps: int = 0
     status: str = "inactive"  # inactive, active, finished
+    date_start: str = ""
+    date_end: str = ""
     year: int = 2026
 
 
@@ -147,12 +153,14 @@ class DashboardState(BaseModel):
     fastest_lap: FastestLap = Field(default_factory=FastestLap)
     speed_trap: SpeedTrap = Field(default_factory=SpeedTrap)
     delay_seconds: float = 8.0
+    race_start_time: str = ""
 
 
 # ── Admin API Models ─────────────────────────────────────
 
 class ConfigUpdate(BaseModel):
     delay_seconds: Optional[float] = None
+    race_start_time: str = ""
 
 
 class HealthStatus(BaseModel):

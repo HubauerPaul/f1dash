@@ -3,24 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1920">
-<title>F1 Dashboard — Data Panels</title>
+<title>F1 Dashboard — Lower</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800;900&display=swap');
 
   :root {
     --bg: #0a0a0a;
-    --panel: #111111;
-    --border: #1e1e1e;
-    --text: #dddddd;
-    --text-dim: #666666;
+    --surface: #141414;
+    --surface2: #1a1a1a;
+    --border: #222;
+    --text: #e0e0e0;
+    --dim: #666;
     --f1-red: #ff1801;
-    --flag-green: #00cc44;
-    --flag-yellow: #ffcc00;
-    --flag-red: #ff2222;
-    --accent-tire: #FFD700;
-    --accent-weather: #44aaff;
-    --accent-tl: #ff8844;
+    --green: #00d647;
+    --yellow: #ffd000;
+    --double-yellow: #ff8c00;
+    --red: #ff1801;
+    --blue: #2196f3;
   }
 
   body {
@@ -30,468 +31,702 @@
     width: 1920px;
     height: 1080px;
     overflow: hidden;
-    cursor: none;
+    position: relative;
   }
 
-  /* ── Layout: 3 columns ─────────────────── */
-  .container {
-    display: grid;
-    grid-template-columns: 1.8fr 2fr 1.2fr;
-    height: 100vh;
-    background: var(--panel);
-  }
-
-  /* ── Section Headers ───────────────────── */
-  .section-header {
-    padding: 10px 16px;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
+  /* ── Main Layout ─────────────────────────── */
+  .main {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
+    height: 100%;
   }
-  .section-header .icon { font-size: 14px; }
 
-  /* ── Column Panels ─────────────────────── */
-  .panel {
+  /* ── Race Control Panel (left, ~68%) ─────── */
+  .rc-panel {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    border-right: 1px solid var(--border);
   }
-  .panel:not(:last-child) { border-right: 1px solid var(--border); }
-  .panel-content {
+
+  .rc-header {
+    height: 52px;
+    min-height: 52px;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  .rc-title {
+    font-size: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--f1-red);
+  }
+
+  .rc-count {
+    font-size: 13px;
+    color: var(--dim);
+    margin-left: auto;
+  }
+
+  .rc-messages {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+    padding: 8px 0;
   }
 
-  /* ── Race Control ──────────────────────── */
-  .rc-header { color: var(--flag-yellow); background: linear-gradient(90deg, rgba(255,204,0,0.04), transparent); }
-
-  .rc-message {
-    padding: 10px 14px;
-    border-left: 4px solid #555;
-    border-radius: 0 4px 4px 0;
-    margin: 4px 10px;
-  }
-  .rc-message.latest { background: rgba(255,255,255,0.02); }
-  .rc-meta {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
-  }
-  .rc-time { color: #555; font-size: 14px; }
-  .rc-type { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; }
-  .rc-text { color: #ccc; font-size: 15px; font-weight: 600; line-height: 1.35; }
-  .rc-driver { color: #999; font-size: 14px; margin-top: 3px; }
-
-  .rc-type.FLAG { color: var(--flag-yellow); }
-  .rc-type.INVESTIGATION { color: #cc9922; }
-  .rc-type.PENALTY { color: #ff4444; }
-  .rc-type.DRS { color: #00bbff; }
-  .rc-type.TRACKLIMITS { color: var(--accent-tl); }
-
-  .rc-message.flag-green { border-left-color: var(--flag-green); }
-  .rc-message.flag-yellow { border-left-color: var(--flag-yellow); }
-  .rc-message.flag-red { border-left-color: var(--flag-red); }
-  .rc-message.penalty { border-left-color: #ff4444; }
-  .rc-message.investigation { border-left-color: #cc9922; }
-  .rc-message.tracklimits { border-left-color: var(--accent-tl); }
-  .rc-message.drs { border-left-color: #00bbff; }
-
-  /* Race control status bar */
-  .rc-status {
-    padding: 10px 16px;
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  .rc-status-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-  }
-  .rc-status-text { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; }
-
-  /* ── Tire Strategy ─────────────────────── */
-  .tire-header {
-    color: var(--accent-tire);
-    background: linear-gradient(90deg, rgba(255,215,0,0.04), transparent);
-  }
-  .tire-table-header {
+  /* ── Race Control Message Row ────────────── */
+  .rc-msg {
     display: grid;
-    grid-template-columns: 30px 46px 40px 1fr;
-    padding: 5px 12px;
-    color: #444;
+    grid-template-columns: 90px auto 1fr;
+    gap: 0;
+    padding: 10px 24px;
+    border-bottom: 1px solid #1a1a1a;
+    font-size: 17px;
+    line-height: 1.4;
+    align-items: start;
+    transition: background 0.2s;
+  }
+  .rc-msg:first-child {
+    animation: fadeIn 0.4s ease;
+  }
+  .rc-msg:hover {
+    background: #1a1a1a;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .rc-time {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dim);
+    padding-top: 2px;
+  }
+
+  .rc-driver-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 10px;
+    min-width: 80px;
+    justify-content: center;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .rc-driver-tag .tag-stripe {
+    width: 3px;
+    height: 16px;
+    border-radius: 1px;
+    margin-right: 3px;
+  }
+
+  .rc-text {
+    font-size: 17px;
+    font-weight: 400;
+    word-break: break-word;
+  }
+
+  /* Message type indicators */
+  .rc-msg.flag .rc-text { font-weight: 600; }
+  .rc-msg.flag-yellow .rc-text { color: var(--yellow); }
+  .rc-msg.flag-red .rc-text { color: var(--red); font-weight: 700; }
+  .rc-msg.flag-green .rc-text { color: var(--green); }
+  .rc-msg.investigation .rc-text { color: #ff9800; }
+  .rc-msg.penalty .rc-text { color: var(--red); }
+  .rc-msg.drs .rc-text { color: var(--green); }
+  .rc-msg.track_limits .rc-text { color: var(--yellow); }
+
+  .rc-type-badge {
+    display: inline-block;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    border-bottom: 1px solid #1a1a1a;
-  }
-  .tire-row {
-    display: grid;
-    grid-template-columns: 30px 46px 40px 1fr;
-    align-items: center;
-    padding: 4px 12px;
-    border-left: 4px solid transparent;
-  }
-  .tire-row .pos { color: #777; font-size: 14px; }
-  .tire-row .abbr { color: #ddd; font-weight: 800; font-size: 14px; }
-  .tire-row .pit { color: #888; font-size: 14px; text-align: center; }
-
-  /* Stint bars */
-  .stint-bar {
-    display: flex;
-    height: 18px;
+    text-transform: uppercase;
+    padding: 1px 6px;
     border-radius: 3px;
-    overflow: hidden;
-    gap: 2px;
+    margin-right: 8px;
+    vertical-align: middle;
   }
-  .stint-segment {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 800;
-    color: #000;
-    min-width: 22px;
-    border-radius: 2px;
-  }
-  .stint-S { background: #FF3333; }
-  .stint-M { background: #FFD700; }
-  .stint-H { background: #FFFFFF; color: #333; }
-  .stint-I { background: #44BB44; }
-  .stint-W { background: #3399FF; }
+  .rc-type-badge.flag { background: rgba(255,208,0,0.2); color: var(--yellow); }
+  .rc-type-badge.investigation { background: rgba(255,152,0,0.2); color: #ff9800; }
+  .rc-type-badge.penalty { background: rgba(255,24,1,0.2); color: var(--red); }
+  .rc-type-badge.drs { background: rgba(0,214,71,0.2); color: var(--green); }
+  .rc-type-badge.track_limits { background: rgba(255,208,0,0.15); color: var(--yellow); }
+  .rc-type-badge.other { background: rgba(100,100,100,0.2); color: var(--dim); }
 
-  /* Tire legend */
-  .tire-legend {
-    padding: 8px 14px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 14px;
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-  .tire-legend-item {
-    display: flex; align-items: center; gap: 5px; color: #555;
-  }
-  .tire-legend-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-  }
-
-  /* ── Weather ───────────────────────────── */
-  .weather-header {
-    color: var(--accent-weather);
-    background: linear-gradient(90deg, rgba(68,170,255,0.04), transparent);
-  }
-  .weather-content { padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
-  .weather-main {
-    display: flex; align-items: center; gap: 16px;
-  }
-  .weather-icon { font-size: 44px; line-height: 1; }
-  .weather-temp { font-size: 30px; font-weight: 300; }
-  .weather-temp-unit { font-size: 14px; color: #555; }
-  .weather-desc { color: #555; font-size: 12px; font-weight: 600; }
-  .weather-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  }
-  .weather-card {
-    background: #1a1a1a; border-radius: 5px; padding: 12px 14px;
-  }
-  .weather-card-label {
-    color: #555; font-size: 11px; letter-spacing: 0.08em; margin-bottom: 6px;
-  }
-  .weather-card-value { font-size: 22px; font-weight: 700; }
-  .weather-card-sub { font-size: 11px; margin-top: 3px; }
-
-  /* ── Track Limits ──────────────────────── */
-  .tl-header {
-    color: var(--accent-tl);
-    background: linear-gradient(90deg, rgba(255,136,68,0.04), transparent);
-  }
-  .tl-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 5px 14px;
-    border-left: 3px solid transparent;
-  }
-  .tl-abbr { color: #aaa; font-size: 14px; font-weight: 700; min-width: 40px; }
-  .tl-tally { color: var(--accent-tl); font-size: 16px; font-weight: 800; letter-spacing: 0.05em; }
-  .tl-warning { color: #ff4444; font-size: 12px; margin-left: auto; font-weight: 700; }
-  .tl-count { color: #666; font-size: 12px; margin-left: auto; }
-  .tl-empty { color: #444; font-size: 13px; padding: 14px 16px; }
-
-  /* ── Right column split ────────────────── */
-  .right-column {
+  /* ── Right Sidebar ───────────────────────── */
+  .sidebar {
+    width: 600px;
+    min-width: 600px;
     display: flex;
     flex-direction: column;
+    background: var(--surface);
   }
-  .right-top { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .right-bottom { border-top: 1px solid var(--border); display: flex; flex-direction: column; max-height: 35%; overflow: hidden; }
-  .right-bottom .panel-content { overflow-y: auto; }
 
-  /* ── Standby ───────────────────────────── */
-  .standby {
-    display: none;
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--bg);
-    align-items: center; justify-content: center;
-    flex-direction: column; gap: 12px;
+  /* ── Tire Strategy Section ───────────────── */
+  .tire-section {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
   }
-  .standby.visible { display: flex; }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--f1-red);
+    margin-bottom: 12px;
+  }
+
+  .tire-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 340px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+  }
+
+  .tire-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+  }
+
+  .tire-row-pos {
+    width: 24px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    color: var(--dim);
+  }
+
+  .tire-row-stripe {
+    width: 3px;
+    height: 18px;
+    border-radius: 1px;
+  }
+
+  .tire-row-name {
+    width: 40px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .tire-stint {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .stint-chip {
+    display: flex;
+    align-items: center;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    gap: 3px;
+    border: 2px solid;
+  }
+  .stint-chip.S { border-color: var(--f1-red); color: var(--f1-red); }
+  .stint-chip.M { border-color: var(--yellow); color: var(--yellow); }
+  .stint-chip.H { border-color: #ccc; color: #ccc; }
+  .stint-chip.I { border-color: var(--green); color: var(--green); }
+  .stint-chip.W { border-color: var(--blue); color: var(--blue); }
+
+  .stint-laps {
+    font-weight: 600;
+  }
+
+  /* ── Weather Section ─────────────────────── */
+  .weather-section {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+
+  .weather-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .weather-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .weather-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .weather-value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .weather-value.temp { color: #ff8c00; }
+  .weather-value.track { color: #ff5722; }
+  .weather-value.humidity { color: var(--blue); }
+  .weather-value.wind { color: #78909c; }
+  .weather-value.rain { color: var(--blue); }
+  .weather-value.pressure { color: #888; }
+
+  .weather-unit {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--dim);
+  }
+
+  /* ── Countdown Section ───────────────────── */
+  .countdown-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 24px;
+  }
+
+  .countdown-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+
+  .countdown-time {
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .countdown-sub {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+
+  .countdown-limit {
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--surface2);
+    font-size: 12px;
+  }
+  .countdown-limit.active {
+    color: var(--yellow);
+    background: rgba(255,208,0,0.1);
+  }
+  .countdown-limit.exceeded {
+    color: var(--red);
+    background: rgba(255,24,1,0.1);
+  }
+
+  /* ── Standby ─────────────────────────────── */
+  .standby {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    background: var(--bg);
+  }
+  .standby.hidden { display: none; }
   .standby h1 { font-size: 28px; font-weight: 300; }
-  .standby h1 span { font-weight: 900; color: var(--f1-red); }
-  .standby p { color: #444; font-size: 14px; }
+  .standby h1 span { color: var(--f1-red); font-weight: 900; }
+  .standby .sub { color: var(--dim); font-size: 14px; margin-top: 8px; }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Race Control -->
-  <div class="panel">
-    <div class="section-header rc-header">
-      <span class="icon">⚑</span> RACE CONTROL
-    </div>
-    <div class="panel-content" id="raceControl"></div>
-    <div class="rc-status">
-      <div class="rc-status-dot" id="rcStatusDot" style="background: var(--flag-green); box-shadow: 0 0 8px var(--flag-green);"></div>
-      <span class="rc-status-text" id="rcStatusText" style="color: var(--flag-green);">GREEN — ALL CLEAR</span>
-    </div>
-  </div>
-
-  <!-- Tire Strategy -->
-  <div class="panel">
-    <div class="section-header tire-header">
-      <span class="icon">◉</span> TIRE STRATEGY
-    </div>
-    <div class="tire-table-header">
-      <span>P</span><span>DRV</span><span>PIT</span><span>STINT HISTORY</span>
-    </div>
-    <div class="panel-content" id="tireStrategy"></div>
-    <div class="tire-legend">
-      <div class="tire-legend-item"><div class="tire-legend-dot stint-S"></div>SOFT</div>
-      <div class="tire-legend-item"><div class="tire-legend-dot stint-M"></div>MED</div>
-      <div class="tire-legend-item"><div class="tire-legend-dot stint-H"></div>HARD</div>
-      <div class="tire-legend-item"><div class="tire-legend-dot stint-I"></div>INTER</div>
-      <div class="tire-legend-item"><div class="tire-legend-dot stint-W"></div>WET</div>
-      <span style="color:#444; margin-left:auto; font-size:11px;">Lap count in bars</span>
-    </div>
-  </div>
-
-  <!-- Weather + Track Limits -->
-  <div class="right-column">
-    <div class="right-top">
-      <div class="section-header weather-header">
-        <span class="icon">☁</span> WEATHER
-      </div>
-      <div class="panel-content" id="weatherPanel"></div>
-    </div>
-    <div class="right-bottom">
-      <div class="section-header tl-header">
-        <span class="icon">⚠</span> TRACK LIMITS
-      </div>
-      <div class="panel-content" id="trackLimits"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Standby -->
 <div class="standby" id="standby">
   <h1>F1 <span>LIVE</span> DASHBOARD</h1>
-  <p>Waiting for session data...</p>
+  <div class="sub">Lower Monitor — Waiting for session…</div>
+</div>
+
+<div class="main">
+  <!-- Race Control (left) -->
+  <div class="rc-panel">
+    <div class="rc-header">
+      <span class="rc-title">Race Control</span>
+      <span class="rc-count" id="rcCount"></span>
+    </div>
+    <div class="rc-messages" id="rcMessages">
+      <div style="padding:40px;text-align:center;color:var(--dim)">Waiting for race control messages…</div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="sidebar">
+    <!-- Tire Strategy -->
+    <div class="tire-section">
+      <div class="section-title">Tyre Strategy</div>
+      <div class="tire-grid" id="tireGrid"></div>
+    </div>
+
+    <!-- Weather -->
+    <div class="weather-section">
+      <div class="section-title">Weather</div>
+      <div class="weather-grid" id="weatherGrid">
+        <div class="weather-item">
+          <span class="weather-label">Air Temp</span>
+          <span class="weather-value temp" id="wAir">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="weather-label">Track Temp</span>
+          <span class="weather-value track" id="wTrack">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="weather-label">Humidity</span>
+          <span class="weather-value humidity" id="wHumid">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="weather-label">Wind</span>
+          <span class="weather-value wind" id="wWind">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="weather-label">Rain Risk</span>
+          <span class="weather-value rain" id="wRain">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="weather-label">Pressure</span>
+          <span class="weather-value pressure" id="wPressure">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown-section">
+      <div class="countdown-title" id="countdownTitle">Session Time</div>
+      <div class="countdown-time" id="countdownTime">0:00:00</div>
+      <div class="countdown-sub">
+        <span class="countdown-limit" id="limit2h">2h Limit: —</span>
+        <span class="countdown-limit" id="limit3h">3h Limit: —</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── WebSocket ──────────────────────────────────────────
-class F1Socket {
-  constructor(channel, onState) {
-    this.channel = channel;
-    this.onState = onState;
-    this.reconnectDelay = 2000;
-    this.connect();
-  }
-  connect() {
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    this.ws = new WebSocket(`${proto}//${location.host}/ws/${this.channel}`);
-    this.ws.onopen = () => { this.reconnectDelay = 2000; };
-    this.ws.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data);
-        if (d.type === "keepalive" || d.type === "pong") return;
-        if (d.type === "refresh") { location.reload(); return; }
-        this.onState(d);
-      } catch(err) {}
-    };
-    this.ws.onclose = () => {
-      setTimeout(() => this.connect(), this.reconnectDelay);
-      this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 10000);
-    };
-    this.ws.onerror = () => {};
-  }
+// ── State ─────────────────────────────────────
+let state = null;
+let ws = null;
+let reconnectTimer = null;
+let sessionStartTime = null;
+let countdownInterval = null;
+
+// Driver lookup for team colors
+let driverMap = {};  // driver_number -> {abbr, team_color, team}
+
+// ── WebSocket ─────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/lower`);
+
+  ws.onopen = () => {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  };
+
+  ws.onclose = () => {
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.type === 'keepalive' || d.type === 'pong') return;
+      if (d.type === 'refresh') { location.reload(); return; }
+      state = d;
+      render();
+    } catch (err) { console.error('Parse error:', err); }
+  };
+
+  setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping');
+  }, 20000);
 }
 
-// ── Flag Colors ────────────────────────────────────────
-const FLAG_COLORS = {
-  green: "#00cc44", yellow: "#ffcc00", double_yellow: "#ffcc00",
-  red: "#ff2222", sc: "#ffcc00", vsc: "#ffcc00", none: "#333"
-};
-const FLAG_LABELS = {
-  green: "GREEN — ALL CLEAR", yellow: "YELLOW FLAG", double_yellow: "DOUBLE YELLOW",
-  red: "RED FLAG — SUSPENDED", sc: "SAFETY CAR", vsc: "VIRTUAL SAFETY CAR", none: "—"
-};
+// ── Rendering ─────────────────────────────────
+function render() {
+  if (!state) return;
 
-// ── Race Control ───────────────────────────────────────
-function renderRaceControl(messages, flag) {
-  const el = document.getElementById("raceControl");
+  const s = state.session || {};
+  const isActive = s.status === 'active';
 
-  let html = "";
-  const msgs = messages || [];
-  for (let i = 0; i < msgs.length; i++) {
-    const m = msgs[i];
-    let cssClass = "rc-message";
-    if (i === 0) cssClass += " latest";
-
-    // Border color based on type
-    if (m.type === "FLAG") {
-      if (m.flag === "green") cssClass += " flag-green";
-      else if (m.flag === "red") cssClass += " flag-red";
-      else cssClass += " flag-yellow";
-    } else if (m.type === "PENALTY") cssClass += " penalty";
-    else if (m.type === "INVESTIGATION") cssClass += " investigation";
-    else if (m.type === "TRACKLIMITS") cssClass += " tracklimits";
-    else if (m.type === "DRS") cssClass += " drs";
-
-    html += `<div class="${cssClass}">
-      <div class="rc-meta">
-        <span class="rc-time">${m.timestamp || ""}</span>
-        <span class="rc-type ${m.type || ""}">${m.type || "OTHER"}</span>
-      </div>
-      <div class="rc-text">${m.message || ""}</div>
-      ${m.driver ? `<div class="rc-driver">${m.driver}</div>` : ""}
-    </div>`;
+  // Standby
+  const standby = document.getElementById('standby');
+  if (!isActive && (!state.race_control || state.race_control.length === 0)) {
+    standby.classList.remove('hidden');
+    return;
   }
-  el.innerHTML = html;
+  standby.classList.add('hidden');
 
-  // Status bar
-  const dot = document.getElementById("rcStatusDot");
-  const text = document.getElementById("rcStatusText");
-  const flagColor = FLAG_COLORS[flag?.current] || "#333";
-  dot.style.background = flagColor;
-  dot.style.boxShadow = `0 0 8px ${flagColor}`;
-  text.style.color = flagColor;
-  text.textContent = FLAG_LABELS[flag?.current] || "—";
-}
-
-// ── Tire Strategy ──────────────────────────────────────
-function renderTireStrategy(drivers) {
-  const el = document.getElementById("tireStrategy");
-  const active = (drivers || []).filter(d => d.status !== "dnf" && d.tire !== "-");
-
-  let html = "";
-  for (const d of active) {
-    // Stint bar
-    const totalLaps = d.stints.reduce((s, st) => s + st.laps, 0) || 1;
-    let stintHtml = "";
-    for (const st of d.stints) {
-      const w = Math.max(22, (st.laps / totalLaps) * 100);
-      stintHtml += `<div class="stint-segment stint-${st.compound}" style="flex:${st.laps}">${st.laps}</div>`;
+  // Build driver map for team color lookup
+  if (state.drivers) {
+    for (const d of state.drivers) {
+      driverMap[d.driver_number] = {
+        abbr: d.abbr,
+        team_color: d.team_color || '#555',
+        team: d.team || '',
+      };
     }
-
-    html += `<div class="tire-row" style="border-left-color:${d.team_color}">
-      <span class="pos">${d.pos}</span>
-      <span class="abbr">${d.abbr}</span>
-      <span class="pit">${d.pit_stops}</span>
-      <div class="stint-bar">${stintHtml}</div>
-    </div>`;
   }
-  el.innerHTML = html;
+
+  // Race Control
+  renderRaceControl(state.race_control || []);
+
+  // Tire Strategy
+  renderTireStrategy(state.drivers || []);
+
+  // Weather
+  renderWeather(state.weather || {});
+
+  // Countdown
+  updateCountdown(state);
 }
 
-// ── Weather ────────────────────────────────────────────
-function renderWeather(w) {
-  const el = document.getElementById("weatherPanel");
-  if (!w) { el.innerHTML = ""; return; }
+function renderRaceControl(messages) {
+  const container = document.getElementById('rcMessages');
+  document.getElementById('rcCount').textContent = `${messages.length} messages`;
 
-  // Weather icon based on conditions
-  let icon = "☀️";
-  if (w.rain_probability > 50) icon = "🌧️";
-  else if (w.rain_probability > 20) icon = "⛅";
-  else if (w.humidity > 70) icon = "☁️";
-
-  el.innerHTML = `
-    <div class="weather-content">
-      <div class="weather-main">
-        <div class="weather-icon">${icon}</div>
-        <div>
-          <div class="weather-temp">${w.air_temp?.toFixed(0) || "—"}°<span class="weather-temp-unit">C</span></div>
-          <div class="weather-desc">${w.rain_probability > 0 ? w.rain_probability.toFixed(0) + "% RAIN" : "DRY"}</div>
-        </div>
-      </div>
-      <div class="weather-grid">
-        <div class="weather-card">
-          <div class="weather-card-label">TRACK</div>
-          <div class="weather-card-value" style="color:#ff8844">${w.track_temp?.toFixed(0) || "—"}°</div>
-        </div>
-        <div class="weather-card">
-          <div class="weather-card-label">AIR</div>
-          <div class="weather-card-value" style="color:#44aaff">${w.air_temp?.toFixed(0) || "—"}°</div>
-        </div>
-        <div class="weather-card">
-          <div class="weather-card-label">WIND</div>
-          <div class="weather-card-value" style="color:#aaa; font-size:18px;">${w.wind_speed?.toFixed(0) || "—"} <span style="font-size:12px;color:#555">km/h ${w.wind_direction || ""}</span></div>
-        </div>
-        <div class="weather-card">
-          <div class="weather-card-label">HUMIDITY</div>
-          <div class="weather-card-value" style="color:#aaa; font-size:18px;">${w.humidity?.toFixed(0) || "—"}<span style="font-size:12px;color:#555">%</span></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-// ── Track Limits ───────────────────────────────────────
-function renderTrackLimits(drivers) {
-  const el = document.getElementById("trackLimits");
-  const offenders = (drivers || [])
-    .filter(d => d.track_limits > 0)
-    .sort((a, b) => b.track_limits - a.track_limits);
-
-  if (offenders.length === 0) {
-    el.innerHTML = '<div class="tl-empty">No track limit warnings</div>';
+  if (messages.length === 0) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--dim)">No race control messages yet</div>';
     return;
   }
 
-  let html = "";
-  for (const d of offenders) {
-    const tally = "I".repeat(d.track_limits);
-    const atLimit = d.track_limits >= 3;
-    html += `<div class="tl-row" style="border-left-color:${d.team_color}">
-      <span class="tl-abbr">${d.abbr}</span>
-      <span class="tl-tally">${tally}</span>
-      ${atLimit
-        ? '<span class="tl-warning">⚠ NEXT = PENALTY</span>'
-        : `<span class="tl-count">${d.track_limits}/3</span>`
-      }
-    </div>`;
+  let html = '';
+  for (const msg of messages) {
+    // Determine CSS classes based on type
+    let typeClass = (msg.type || 'OTHER').toLowerCase();
+    let flagClass = '';
+
+    if (msg.type === 'FLAG') {
+      typeClass = 'flag';
+      const f = (msg.flag || '').toLowerCase();
+      if (f === 'yellow' || f === 'double_yellow') flagClass = 'flag-yellow';
+      else if (f === 'red') flagClass = 'flag-red';
+      else if (f === 'green') flagClass = 'flag-green';
+    }
+
+    // Try to find driver info and team color
+    let driverTag = '';
+    if (msg.driver) {
+      // Extract driver number from "Car XX (ABR)" format
+      const numMatch = msg.driver.match(/Car (\d+)/);
+      const abbrMatch = msg.driver.match(/\(([A-Z]+)\)/);
+      const num = numMatch ? numMatch[1] : '';
+      const abbr = abbrMatch ? abbrMatch[1] : '';
+      const drv = driverMap[parseInt(num)] || {};
+      const color = drv.team_color || '#555';
+
+      driverTag = `<span class="rc-driver-tag" style="background:${hexToRgba(color, 0.2)};color:${color};border:1px solid ${hexToRgba(color, 0.4)}">
+        <span class="tag-stripe" style="background:${color}"></span>
+        ${abbr || 'Car ' + num}
+      </span>`;
+    } else if (msg.driver_number) {
+      const drv = driverMap[parseInt(msg.driver_number)] || {};
+      const color = drv.team_color || '#555';
+      const abbr = drv.abbr || msg.driver_number;
+      driverTag = `<span class="rc-driver-tag" style="background:${hexToRgba(color, 0.2)};color:${color};border:1px solid ${hexToRgba(color, 0.4)}">
+        <span class="tag-stripe" style="background:${color}"></span>
+        ${abbr}
+      </span>`;
+    }
+
+    // Type badge
+    const typeBadge = `<span class="rc-type-badge ${typeClass}">${formatType(msg.type)}</span>`;
+
+    html += `
+      <div class="rc-msg ${typeClass} ${flagClass}">
+        <span class="rc-time">${msg.timestamp || ''}</span>
+        <span>${driverTag}</span>
+        <span class="rc-text">${typeBadge}${escapeHtml(msg.message || '')}</span>
+      </div>`;
   }
-  el.innerHTML = html;
+
+  container.innerHTML = html;
 }
 
-// ── Main Update ────────────────────────────────────────
-function updateUI(data) {
-  document.getElementById("standby").classList.remove("visible");
+function renderTireStrategy(drivers) {
+  const grid = document.getElementById('tireGrid');
+  if (!drivers.length) return;
 
-  renderRaceControl(data.race_control, data.flag);
-  renderTireStrategy(data.drivers);
-  renderWeather(data.weather);
-  renderTrackLimits(data.drivers);
+  let html = '';
+  for (const d of drivers) {
+    const stints = d.stints || [];
+    if (stints.length === 0) continue;
+
+    let stintChips = '';
+    for (const stint of stints) {
+      stintChips += `<span class="stint-chip ${stint.compound}">
+        <span>${stint.compound}</span>
+        <span class="stint-laps">${stint.laps || ''}</span>
+      </span> `;
+    }
+
+    html += `
+      <div class="tire-row">
+        <span class="tire-row-pos">${d.pos || ''}</span>
+        <span class="tire-row-stripe" style="background:${d.team_color || '#555'}"></span>
+        <span class="tire-row-name">${d.abbr || '???'}</span>
+        <div class="tire-stint">${stintChips}</div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
 }
 
-// ── Standby ────────────────────────────────────────────
-document.getElementById("standby").classList.add("visible");
+function renderWeather(w) {
+  document.getElementById('wAir').innerHTML = w.air_temp ?
+    `${w.air_temp.toFixed(1)}<span class="weather-unit">°C</span>` : '—';
+  document.getElementById('wTrack').innerHTML = w.track_temp ?
+    `${w.track_temp.toFixed(1)}<span class="weather-unit">°C</span>` : '—';
+  document.getElementById('wHumid').innerHTML = w.humidity ?
+    `${Math.round(w.humidity)}<span class="weather-unit">%</span>` : '—';
+  document.getElementById('wWind').innerHTML = w.wind_speed ?
+    `${w.wind_speed.toFixed(1)}<span class="weather-unit"> km/h ${windDirArrow(w.wind_direction)}</span>` : '—';
+  document.getElementById('wRain').innerHTML =
+    `${Math.round(w.rain_probability || 0)}<span class="weather-unit">%</span>`;
+  document.getElementById('wPressure').innerHTML = w.pressure ?
+    `${w.pressure.toFixed(0)}<span class="weather-unit"> hPa</span>` : '—';
+}
 
-// ── Connect ────────────────────────────────────────────
-new F1Socket("lower", updateUI);
+function updateCountdown(state) {
+  // Parse session start time
+  const startStr = state.race_start_time || state.session?.date_start || '';
+  if (!startStr) {
+    document.getElementById('countdownTime').textContent = '—:—:—';
+    return;
+  }
+
+  const start = new Date(startStr.replace('Z', '+00:00'));
+  if (isNaN(start.getTime())) return;
+
+  // Clear existing interval
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  function tick() {
+    const now = new Date();
+    const elapsed = Math.max(0, Math.floor((now - start) / 1000));
+
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    const s = elapsed % 60;
+
+    document.getElementById('countdownTime').textContent =
+      `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+    // Session type for title
+    const sessionName = (state.session?.name || '').toLowerCase();
+    if (sessionName.includes('race') || sessionName.includes('sprint')) {
+      document.getElementById('countdownTitle').textContent = 'Race Duration';
+    } else {
+      document.getElementById('countdownTitle').textContent = 'Session Time';
+    }
+
+    // 2-hour and 3-hour limits (for races)
+    const limit2h = document.getElementById('limit2h');
+    const limit3h = document.getElementById('limit3h');
+
+    const twoH = 2 * 3600;
+    const threeH = 3 * 3600;
+
+    // 2h remaining
+    const rem2h = twoH - elapsed;
+    if (rem2h > 0) {
+      const rm = Math.floor(rem2h / 60);
+      const rs = rem2h % 60;
+      limit2h.textContent = `2h: -${rm}:${String(rs).padStart(2, '0')}`;
+      limit2h.className = 'countdown-limit' + (rem2h < 600 ? ' active' : '');
+    } else {
+      limit2h.textContent = '2h: EXCEEDED';
+      limit2h.className = 'countdown-limit exceeded';
+    }
+
+    // 3h remaining
+    const rem3h = threeH - elapsed;
+    if (rem3h > 0) {
+      const rm3 = Math.floor(rem3h / 60);
+      const rs3 = rem3h % 60;
+      limit3h.textContent = `3h: -${rm3}:${String(rs3).padStart(2, '0')}`;
+      limit3h.className = 'countdown-limit' + (rem3h < 600 ? ' active' : '');
+    } else {
+      limit3h.textContent = '3h: EXCEEDED';
+      limit3h.className = 'countdown-limit exceeded';
+    }
+  }
+
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+// ── Helpers ───────────────────────────────────
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(85,85,85,${alpha})`;
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatType(type) {
+  const map = {
+    'FLAG': 'FLAG',
+    'INVESTIGATION': 'INV',
+    'PENALTY': 'PEN',
+    'DRS': 'DRS',
+    'TRACK_LIMITS': 'TL',
+    'OTHER': 'RC',
+  };
+  return map[type] || 'RC';
+}
+
+function windDirArrow(dir) {
+  if (!dir) return '';
+  const d = parseInt(dir);
+  if (isNaN(d)) return dir;
+  const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
+  return arrows[Math.round(d / 45) % 8];
+}
+
+// ── Init ──────────────────────────────────────
+connect();
 </script>
 </body>
 </html>

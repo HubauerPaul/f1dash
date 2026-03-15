@@ -3,6 +3,11 @@
 Polls the OpenF1 API endpoints and aggregates data into a unified
 DashboardState object. Each endpoint is polled at its own configurable
 interval to balance freshness against API load.
+
+Updates vs original:
+- Automatic OAuth2 token refresh via TokenManager
+- Rate limiting (6/s, 60/min) with 429 back-off
+- Smarter polling intervals to stay within limits
 """
 
 import asyncio
@@ -20,6 +25,8 @@ from backend.models import (
 )
 from backend.crash_detection import CrashDetector
 from backend.track_limits import TrackLimitsTracker
+from backend.token_manager import TokenManager
+from backend.rate_limiter import RateLimiter
 
 logger = logging.getLogger("f1dash.openf1")
 
@@ -30,6 +37,17 @@ class OpenF1Client:
     def __init__(self, config: dict):
         self.config = config
         self.intervals = config.get("polling_intervals", {})
+
+        # Token management — auto-refresh
+        self.token_manager = TokenManager(
+            username=config.get("openf1_username", ""),
+            password=config.get("openf1_password", ""),
+        )
+
+        # Rate limiter — 6/s, 60/min
+        self.rate_limiter = RateLimiter()
+
+        # HTTP client — headers will be set per-request via token manager
         self.client = httpx.AsyncClient(
             base_url=BASE_URL,
             timeout=10.0,
@@ -49,6 +67,9 @@ class OpenF1Client:
         self.fastest_lap = FastestLap()
         self.speed_trap = SpeedTrap()
 
+        # Race timing
+        self.race_start_time: Optional[str] = None  # ISO timestamp of session start
+
         # Helpers
         self.crash_detector = CrashDetector(
             speed_high=config.get("crash_detection", {}).get("speed_threshold_high", 200),
@@ -63,20 +84,52 @@ class OpenF1Client:
         self._last_poll: dict[str, float] = {}
         self._api_connected = False
         self._last_api_time = ""
-        self._last_rc_date: Optional[str] = None  # Track last race control msg
+        self._last_rc_date: Optional[str] = None
         self._running = False
 
     # ── API Helpers ────────────────────────────────────────
 
     async def _get(self, endpoint: str, params: dict = None) -> Optional[list[dict]]:
-        """Make a GET request to the OpenF1 API."""
+        """Make a rate-limited, authenticated GET request to OpenF1."""
+        # Wait for rate limit slot
+        await self.rate_limiter.acquire()
+
+        # Get fresh auth headers
+        auth_headers = await self.token_manager.get_auth_headers()
+
         try:
-            resp = await self.client.get(endpoint, params=params or {})
+            resp = await self.client.get(
+                endpoint,
+                params=params or {},
+                headers=auth_headers,
+            )
+
+            # Handle 429 Too Many Requests
+            if resp.status_code == 429:
+                self.rate_limiter.report_429()
+                logger.warning(f"429 on {endpoint} — will retry after back-off")
+                return None
+
+            # Handle 422 (invalid filter) gracefully
+            if resp.status_code == 422:
+                logger.debug(f"422 on {endpoint} — endpoint may not support these params")
+                return None
+
+            # Handle 404 (endpoint not available for this session type)
+            if resp.status_code == 404:
+                logger.debug(f"404 on {endpoint} — not available for this session")
+                return None
+
             resp.raise_for_status()
+            self.rate_limiter.report_success()
             self._api_connected = True
             self._last_api_time = datetime.now(timezone.utc).isoformat()
             data = resp.json()
             return data if isinstance(data, list) else []
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"API error on {endpoint}: HTTP {e.response.status_code}")
+            self._api_connected = False
+            return None
         except Exception as e:
             logger.warning(f"API error on {endpoint}: {e}")
             self._api_connected = False
@@ -94,11 +147,7 @@ class OpenF1Client:
     # ── Session Discovery ──────────────────────────────────
 
     async def find_active_session(self) -> bool:
-        """Find the current or most recent session.
-        
-        Checks date_start and date_end to determine if a session is 
-        actually live right now, or if we're between sessions.
-        """
+        """Find the current or most recent session."""
         if not self._should_poll("sessions"):
             return self.session.session_key is not None
 
@@ -111,8 +160,6 @@ class OpenF1Client:
         from datetime import datetime as dt_cls, timedelta
         now = dt_cls.now(timezone.utc)
 
-        # Find a session that is currently live (started but not ended)
-        # Add 30 min buffer after date_end for post-session data
         live_session = None
         most_recent = None
         for s in data:
@@ -120,10 +167,9 @@ class OpenF1Client:
                 start = dt_cls.fromisoformat(s["date_start"].replace("Z", "+00:00"))
                 end_str = s.get("date_end", "")
                 end = dt_cls.fromisoformat(end_str.replace("Z", "+00:00")) if end_str else start + timedelta(hours=3)
-                
+
                 if start <= now:
                     most_recent = s
-                    # Session is live if we're between start and end+30min
                     if now <= end + timedelta(minutes=30):
                         live_session = s
             except (KeyError, ValueError):
@@ -132,19 +178,23 @@ class OpenF1Client:
         if live_session:
             latest = live_session
             status = "active"
-            # Fast polling during live session
             self.intervals["sessions"] = 60.0
+            self.race_start_time = latest.get("date_start")
             logger.info(f"LIVE session: {latest.get('session_name')} at {latest.get('circuit_short_name')}")
         elif most_recent:
             latest = most_recent
             status = "finished"
-            # Slow polling between sessions — once per minute
             self.intervals["sessions"] = 60.0
-            logger.info(f"No live session. Last was: {latest.get('session_name')} at {latest.get('circuit_short_name')}")
+            self.race_start_time = latest.get("date_start")
+            logger.info(f"No live session. Last: {latest.get('session_name')} at {latest.get('circuit_short_name')}")
         else:
             self.session = SessionInfo(status="inactive")
             self.intervals["sessions"] = 60.0
             return False
+
+        # Determine total laps if race
+        session_name = latest.get("session_name", "")
+        total_laps = latest.get("total_laps", 0)
 
         self.session = SessionInfo(
             session_key=latest.get("session_key") if status == "active" else None,
@@ -154,13 +204,14 @@ class OpenF1Client:
             country=latest.get("country_name", ""),
             year=latest.get("year", 2026),
             status=status,
+            date_start=latest.get("date_start", ""),
+            date_end=latest.get("date_end", ""),
         )
         return status == "active"
 
     # ── Data Polling ───────────────────────────────────────
 
     async def poll_drivers(self) -> None:
-        """Fetch driver list for current session."""
         if not self.session.session_key or not self._should_poll("drivers"):
             return
 
@@ -187,11 +238,9 @@ class OpenF1Client:
             drv.team_color = team_info.get("color", "#555555")
 
     async def poll_positions(self) -> None:
-        """Fetch race positions and location (x,y) data."""
         if not self.session.session_key or not self._should_poll("position"):
             return
 
-        # 1) Race positions (1st, 2nd, etc.)
         pos_data = await self._get("/position", {
             "session_key": self.session.session_key,
         })
@@ -207,7 +256,10 @@ class OpenF1Client:
                     if pos:
                         self.drivers[num].pos = pos
 
-        # 2) Location (x, y coordinates on track)
+        # Location polling — separate interval to reduce load
+        if not self._should_poll("location"):
+            return
+
         loc_data = await self._get("/location", {
             "session_key": self.session.session_key,
         })
@@ -224,24 +276,22 @@ class OpenF1Client:
                     y = entry.get("y", 0) or 0
                     drv.x = float(x)
                     drv.y = float(y)
-                    # Mark as on-track if coordinates are non-zero
                     if x != 0 or y != 0:
-                        drv.track_pct = 0.5  # Placeholder, frontend uses x,y
+                        drv.track_pct = 0.5
                     else:
                         drv.track_pct = -1.0
 
     async def poll_intervals(self) -> None:
-        """Fetch gap/interval data."""
         if not self.session.session_key or not self._should_poll("intervals"):
             return
 
+        # Intervals endpoint may not be available for all session types
         data = await self._get("/intervals", {
             "session_key": self.session.session_key,
         })
         if not data:
             return
 
-        # Take latest per driver
         latest: dict[int, dict] = {}
         for entry in data:
             num = entry.get("driver_number", 0)
@@ -257,7 +307,6 @@ class OpenF1Client:
                 drv.interval = str(interval) if interval is not None else ""
 
     async def poll_laps(self) -> None:
-        """Fetch lap times and update positions/fastest lap."""
         if not self.session.session_key or not self._should_poll("laps"):
             return
 
@@ -267,7 +316,6 @@ class OpenF1Client:
         if not data:
             return
 
-        # Latest lap per driver
         latest: dict[int, dict] = {}
         max_lap = 0
         best_time = None
@@ -287,7 +335,6 @@ class OpenF1Client:
 
         self.session.lap = max_lap
 
-        # Update fastest lap
         if best_time and best_driver:
             drv = self.drivers.get(int(best_driver))
             if drv:
@@ -308,7 +355,6 @@ class OpenF1Client:
                     drv.last_lap = f"{minutes}:{seconds:06.3f}"
 
     async def poll_stints(self) -> None:
-        """Fetch tire stint data."""
         if not self.session.session_key or not self._should_poll("stints"):
             return
 
@@ -318,7 +364,6 @@ class OpenF1Client:
         if not data:
             return
 
-        # Group stints by driver
         stints_by_driver: dict[int, list[dict]] = {}
         for entry in data:
             num = entry.get("driver_number", 0)
@@ -332,13 +377,11 @@ class OpenF1Client:
                 continue
             drv = self.drivers[num]
 
-            # Sort by stint number
             stints.sort(key=lambda s: s.get("stint_number", 0))
 
             drv.stints = []
             for stint in stints:
                 compound = stint.get("compound", "UNKNOWN")
-                # Map full name to abbreviation
                 compound_map = {
                     "SOFT": "S", "MEDIUM": "M", "HARD": "H",
                     "INTERMEDIATE": "I", "WET": "W",
@@ -349,15 +392,13 @@ class OpenF1Client:
                 laps = max(0, end - start + 1) if end else 0
                 drv.stints.append(StintInfo(compound=c, laps=laps))
 
-            # Current tire = last stint compound
             if drv.stints:
                 drv.tire = drv.stints[-1].compound
+                drv.tire_laps = drv.stints[-1].laps
 
-            # Pit stops = number of stints - 1
             drv.pit_stops = max(0, len(drv.stints) - 1)
 
     async def poll_race_control(self) -> None:
-        """Fetch race control messages (flags, penalties, etc.)."""
         if not self.session.session_key or not self._should_poll("race_control"):
             return
 
@@ -380,7 +421,6 @@ class OpenF1Client:
             category = entry.get("category", "").upper()
             flag_str = entry.get("flag", "")
 
-            # Determine message type
             msg_type = RaceControlType.OTHER
             flag_status = None
             sector = entry.get("sector")
@@ -410,18 +450,17 @@ class OpenF1Client:
                 msg_type = RaceControlType.DRS
             elif "TRACK LIMITS" in msg_text.upper() or "TRACK LIMIT" in msg_text.upper():
                 msg_type = RaceControlType.TRACK_LIMITS
-                # Process for track limits counter
                 self.track_limits.process_message(msg_text, date)
 
-            # Parse driver info from message
             driver_info = None
+            driver_number_str = None
             if entry.get("driver_number"):
                 num = entry["driver_number"]
                 drv = self.drivers.get(num)
                 if drv:
                     driver_info = f"Car {num} ({drv.abbr})"
+                    driver_number_str = str(num)
 
-            # Format timestamp
             ts = ""
             if date:
                 try:
@@ -436,15 +475,14 @@ class OpenF1Client:
                 flag=flag_status,
                 message=msg_text,
                 driver=driver_info,
+                driver_number=driver_number_str,
                 sector=sector,
             )
             self.race_control_msgs.append(rc_msg)
 
-        # Keep only last 50 messages
         if len(self.race_control_msgs) > 50:
             self.race_control_msgs = self.race_control_msgs[-50:]
 
-        # If flag changed, try crash detection
         if flag_changed and self.current_flag in (FlagStatus.YELLOW, FlagStatus.DOUBLE_YELLOW, FlagStatus.RED):
             crash_driver = self.crash_detector.find_crash_driver(
                 list(self.drivers.keys())
@@ -455,7 +493,6 @@ class OpenF1Client:
                     self.flag_driver = f"Car {crash_driver} — {drv.name}"
 
     async def poll_weather(self) -> None:
-        """Fetch weather data."""
         if not self.session.session_key or not self._should_poll("weather"):
             return
 
@@ -477,28 +514,24 @@ class OpenF1Client:
         )
 
     async def poll_car_data(self) -> None:
-        """Fetch car telemetry for speed trap and crash detection."""
         if not self.session.session_key or not self._should_poll("car_data"):
             return
 
+        # Only fetch latest car data to reduce payload
         data = await self._get("/car_data", {
             "session_key": self.session.session_key,
-            "speed>": 0,
         })
         if not data:
             return
 
-        # Latest speed per driver
         latest: dict[int, float] = {}
         for entry in data:
             num = entry.get("driver_number", 0)
             speed = entry.get("speed", 0)
             if num and speed:
                 latest[num] = speed
-                # Feed crash detector
                 self.crash_detector.update_speed(num, speed)
 
-        # Update driver speeds and find speed trap leader
         max_speed = 0
         max_speed_driver = 0
         for num, speed in latest.items():
@@ -517,19 +550,14 @@ class OpenF1Client:
     # ── State Assembly ─────────────────────────────────────
 
     def build_state(self, delay_seconds: float = 8.0) -> DashboardState:
-        """Assemble the complete dashboard state from all polled data."""
-
-        # Sort drivers by position
         sorted_drivers = sorted(
             self.drivers.values(),
             key=lambda d: d.pos if d.pos > 0 else 999
         )
 
-        # Apply track limits counts
         for drv in sorted_drivers:
             drv.track_limits = self.track_limits.get_count(drv.driver_number)
 
-        # Build flag state
         flag_changed = self.previous_flag != self.current_flag
         flag_state = FlagState(
             current=self.current_flag,
@@ -538,11 +566,9 @@ class OpenF1Client:
             message=self.flag_message if flag_changed else None,
             driver=self.flag_driver if flag_changed else None,
         )
-        # Reset changed flag after building state
         if flag_changed:
             self.previous_flag = self.current_flag
 
-        # Race control: newest first
         rc_reversed = list(reversed(self.race_control_msgs))
 
         return DashboardState(
@@ -550,11 +576,12 @@ class OpenF1Client:
             session=self.session,
             flag=flag_state,
             drivers=sorted_drivers,
-            race_control=rc_reversed[:20],  # Last 20 messages
+            race_control=rc_reversed[:20],
             weather=self.weather,
             fastest_lap=self.fastest_lap,
             speed_trap=self.speed_trap,
             delay_seconds=delay_seconds,
+            race_start_time=self.race_start_time or "",
         )
 
     # ── Main Poll Loop ─────────────────────────────────────
@@ -563,26 +590,30 @@ class OpenF1Client:
         """Run one poll cycle across all endpoints.
 
         Returns the assembled state, or None if no session is active.
-        Returns a minimal state with session info when between sessions.
+        Endpoints are polled sequentially with rate-limit-aware spacing.
         """
         has_session = await self.find_active_session()
-        
-        # Between sessions — return minimal state for standby display
+
         if not has_session:
             return self.build_state()
 
-        # Poll all endpoints (each respects its own interval)
-        await asyncio.gather(
-            self.poll_drivers(),
-            self.poll_positions(),
-            self.poll_intervals(),
-            self.poll_laps(),
-            self.poll_stints(),
-            self.poll_race_control(),
-            self.poll_weather(),
-            self.poll_car_data(),
-            return_exceptions=True,
-        )
+        # Poll endpoints sequentially — rate limiter handles timing
+        for poll_fn in [
+            self.poll_drivers,
+            self.poll_positions,
+            self.poll_race_control,
+            self.poll_laps,
+            self.poll_stints,
+            self.poll_weather,
+            self.poll_intervals,
+            self.poll_car_data,
+        ]:
+            try:
+                await poll_fn()
+                # Small gap between endpoints (rate limiter adds more if needed)
+                await asyncio.sleep(0.3)
+            except Exception as e:
+                logger.warning(f"Poll error in {poll_fn.__name__}: {e}")
 
         return self.build_state()
 
@@ -596,3 +627,4 @@ class OpenF1Client:
 
     async def close(self) -> None:
         await self.client.aclose()
+        await self.token_manager.close()
