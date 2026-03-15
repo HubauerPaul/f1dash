@@ -30,33 +30,33 @@ Both monitors update via WebSocket from a single FastAPI backend. An admin panel
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────┐
-│                  Raspberry Pi 5               │
-│                                               │
-│  ┌─────────────┐     ┌─────────────────────┐  │
-│  │  FastAPI     │────▶│  Delay Buffer       │  │
-│  │  Backend     │     │  (TV sync offset)   │  │
-│  │             │     └────────┬────────────┘  │
-│  │  Polls:     │              │ WebSocket     │
-│  │  OpenF1 API │              ▼               │
-│  │  (REST +    │     ┌────────────────────┐   │
-│  │   Auth)     │     │ Upper: /ws/upper   │──▶│ Monitor 1 (Chromium Kiosk)
-│  │             │     │ Lower: /ws/lower   │──▶│ Monitor 2 (Chromium Kiosk)
-│  │             │     │ Admin: /ws/admin   │──▶│ Any browser on LAN
-│  └─────────────┘     └────────────────────┘   │
-│                                               │
-│  Token Manager ── auto-refreshes OAuth2 token  │
-│  Rate Limiter ─── 5/s, 50/min with backoff    │
-└───────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                  Raspberry Pi 5                 │
+│                                                 │
+│  ┌──────────────┐     ┌─────────────────────┐   │
+│  │  FastAPI     │---->│  Delay Buffer       │   │
+│  │  Backend     │     │  (TV sync offset)   │   │
+│  │              │     └────────┬────────────┘   │
+│  │  Polls:      │              │ WebSocket      │
+│  │  OpenF1 API  │              ▼                │
+│  │   (REST +    │     ┌────────────────────┐    │
+│  │    Auth)     │     │ Upper: /ws/upper   │--->│ Monitor 1 (Chromium Kiosk)
+│  │              │     │ Lower: /ws/lower   │--->│ Monitor 2 (Chromium Kiosk)
+│  │              │     │ Admin: /ws/admin   │--->│ Any browser on LAN
+│  └──────────────┘     └────────────────────┘    │
+│                                                 │
+│  Token Manager ── auto-refreshes OAuth2 token   │
+│  Rate Limiter ─── 5/s, 50/min with backoff      │
+└─────────────────────────────────────────────────┘
 ```
 
 ## Hardware
 
-| Component | Model | Notes |
-|-----------|-------|-------|
-| Computer | Raspberry Pi 5 (8 GB) | Any Linux box works |
-| Monitors | 2× 27" 1080p | Stacked vertically via dual HDMI |
-| OS | Debian Trixie / Raspberry Pi OS | X11 + Openbox |
+|    Component    |         Model         |         Notes         |
+|-----------------|-----------------------|-----------------------|
+|     Computer    | Raspberry Pi 5 (8 GB) |  Any Linux box works  |
+|     Monitors    |        2× 1080p       | Stacked via dual HDMI |
+|        OS       | Debian / Raspberry OS |     X11 + Openbox     |
 
 The dashboard is designed for 1920×1080 per monitor but will work on other resolutions.
 
@@ -165,18 +165,18 @@ The OpenF1 REST API allows 6 requests/second and 60 requests/minute. The built-i
 
 Default polling intervals (configurable in `config.json`):
 
-| Endpoint | Interval | Purpose |
-|----------|----------|---------|
-| `sessions` | 60s | Check for active session |
-| `drivers` | 60s | Driver list + team info |
-| `position` | 8s | Leaderboard positions |
-| `location` | 15s | Track map coordinates |
-| `race_control` | 5s | Flags, penalties, DRS |
-| `laps` | 10s | Lap times, lap count |
-| `stints` | 15s | Tire compound + age |
-| `intervals` | 10s | Gap to leader, interval |
-| `weather` | 30s | Air/track temp, rain |
-| `car_data` | 15s | Speed (speed trap) |
+|    Endpoint    | Interval |          Purpose          |
+|----------------|----------|---------------------------|
+|   `sessions`   |    60s   |  Check for active session |
+|    `drivers`   |    60s   |  Driver list + team info  |
+|   `position`   |    08s   |   Leaderboard positions   |
+|   `location`   |    15s   |   Track map coordinates   |
+| `race_control` |    05s   |   Flags, penalties, DRS   |
+|     `laps`     |    10s   |    Lap times, lap count   |
+|    `stints`    |    15s   |    Tire compound + age    |
+|   `intervals`  |    10s   |  Gap to leader, interval  |
+|    `weather`   |    30s   |    Air/track temp, rain   |
+|   `car_data`   |    15s   |     Speed (speed trap)    |
 
 These intervals ensure the dashboard stays well within rate limits even during live sessions.
 
@@ -221,16 +221,16 @@ Features:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/upper` | GET | Upper monitor HTML |
-| `/lower` | GET | Lower monitor HTML |
-| `/admin` | GET | Admin panel HTML |
-| `/ws/{channel}` | WS | WebSocket (channel: `upper`, `lower`, `admin`) |
-| `/api/health` | GET | System health check |
-| `/api/config` | GET/POST | Read/update configuration |
-| `/api/state` | GET | Current raw dashboard state |
-| `/api/refresh-browsers` | POST | Force-refresh all display clients |
+|         Endpoint         |  Method  |                   Description                   |
+|--------------------------|----------|-------------------------------------------------|
+|         `/upper`         |    GET   |                Upper monitor HTML               |
+|         `/lower`         |    GET   |                Lower monitor HTML               |
+|         `/admin`         |    GET   |                 Admin panel HTML                |
+|      `/ws/{channel}`     |    WS    |  WebSocket (channel: `upper`, `lower`, `admin`) |
+|       `/api/health`      |    GET   |               System health check               |
+|       `/api/config`      | GET/POST |            Read/update configuration            |
+|       `/api/state`       |    GET   |           Current raw dashboard state           |
+|  `/api/refresh-browsers` |   POST   |        Force-refresh all display clients        |
 
 ## Track Maps
 
